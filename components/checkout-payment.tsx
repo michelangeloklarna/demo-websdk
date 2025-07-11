@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect, useRef, useCallback } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,17 +11,245 @@ import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Separator } from "@/components/ui/separator"
-import { CreditCard, Wallet, Building2, ShoppingBag } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
 import { MOCK_CART_ITEMS, PAYMENT_METHODS } from "@/lib/constants"
 import { calculateOrderSummary, formatCurrency } from "@/lib/utils"
 import type { PaymentData } from "@/types"
+import { useKlarna } from "@/hooks/use-klarna"
+import { useKlarnaLogger } from "@/hooks/use-klarna-logger"
+import { KlarnaDebugAlert } from "@/components/klarna-debug-alert"
 
 export default function CheckoutPayment() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentData["method"]>(PAYMENT_METHODS.CARD)
   const [differentBilling, setDifferentBilling] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [mountingStatus, setMountingStatus] = useState({
+    selectionMounted: false,
+    detailedMounted: false,
+    shortSubheaderSelectionMounted: false,
+  })
 
   const orderSummary = useMemo(() => calculateOrderSummary(MOCK_CART_ITEMS), [])
+  
+  // Memoize expensive calculations
+  const cartItems = useMemo(() => MOCK_CART_ITEMS, [])
+  const submitButtonText = useMemo(() => {
+    if (isSubmitting) return "Processing..."
+    if (paymentMethod === PAYMENT_METHODS.KLARNA) return "Continue with Klarna"
+    return "Complete Order"
+  }, [isSubmitting, paymentMethod])
+
+  // Refs for Klarna presentation components
+  const klarnaHeaderSelectionRef = useRef<{ unmount: () => void } | null>(null)
+  const klarnaIconSelectionRef = useRef<{ unmount: () => void } | null>(null)
+  const klarnaSubheaderSelectionRef = useRef<{ unmount: () => void } | null>(null)
+  const klarnaEnrichedSubheaderRef = useRef<{ unmount: () => void } | null>(null)
+
+  // Initialize Klarna logging
+  const { logs, addLog, clearLogs } = useKlarnaLogger()
+
+  // Load Klarna WebSDK with logging
+  const { klarnaPresentation, isLoading: klarnaLoading, error: klarnaError, retry } = useKlarna({
+    amount: orderSummary.total,
+    currency: "USD",
+    locale: "en-US",
+    onLog: addLog
+  })
+
+  // Memoize mounting functions for better performance
+  const mountKlarnaComponents = useCallback(() => {
+    if (!klarnaPresentation) return
+    
+    // Mount header in selection area (always visible)
+    if (klarnaPresentation.header && klarnaPresentation.header.component) {
+      try {
+        const container = document.querySelector("#klarna-header-container-selection")
+        if (!container) {
+          addLog("warning", "Header Mount Warning (Selection)", "Container element not found: #klarna-header-container-selection")
+          return
+        }
+        
+        const headerComponent = klarnaPresentation.header.component()
+        if (headerComponent && headerComponent.mount) {
+          klarnaHeaderSelectionRef.current = headerComponent.mount("#klarna-header-container-selection")
+          addLog("success", "Header Mounted (Selection)", "Klarna header component mounted in selection area")
+          setMountingStatus(prev => ({ ...prev, selectionMounted: true }))
+        }
+      } catch (error) {
+        addLog("error", "Header Mount Error (Selection)", "Failed to mount Klarna header component in selection area", error)
+      }
+    }
+
+    // Mount short subheader in selection area (always visible)
+    if (klarnaPresentation.subheader) {
+      addLog("info", "Subheader Debug", "Subheader object structure", klarnaPresentation.subheader)
+      
+      const subheaderContainer = document.querySelector("#klarna-subheader-container-selection")
+      if (!subheaderContainer) {
+        addLog("warning", "Subheader Mount Warning (Selection)", "Container element not found: #klarna-subheader-container-selection")
+        return
+      }
+      
+      // Try different possible structures
+      let subheaderComponent = null
+      
+      // Check if subheader has direct component method
+      if (klarnaPresentation.subheader.component) {
+        subheaderComponent = klarnaPresentation.subheader.component()
+        addLog("info", "Subheader Found", "Direct component method available")
+      }
+      // Check if subheader.short has component method
+      else if (klarnaPresentation.subheader.short && klarnaPresentation.subheader.short.component) {
+        subheaderComponent = klarnaPresentation.subheader.short.component()
+        addLog("info", "Subheader Found", "Short component method available")
+      }
+      // Check if subheader.enriched has component method
+      else if (klarnaPresentation.subheader.enriched && klarnaPresentation.subheader.enriched.component) {
+        subheaderComponent = klarnaPresentation.subheader.enriched.component()
+        addLog("info", "Subheader Found", "Enriched component method available")
+      }
+      else {
+        addLog("warning", "Subheader Structure", "No component method found", klarnaPresentation.subheader)
+      }
+      
+      if (subheaderComponent && subheaderComponent.mount) {
+        try {
+          klarnaSubheaderSelectionRef.current = subheaderComponent.mount("#klarna-subheader-container-selection")
+          addLog("success", "Subheader Mounted (Selection)", "Klarna subheader component mounted in selection area")
+          setMountingStatus(prev => ({ ...prev, shortSubheaderSelectionMounted: true }))
+        } catch (error) {
+          addLog("error", "Subheader Mount Error (Selection)", "Failed to mount Klarna subheader component in selection area", error)
+        }
+      }
+    }
+
+    // Mount icon in selection area (always visible)
+    if (klarnaPresentation.icon && klarnaPresentation.icon.component) {
+      try {
+        const container = document.querySelector("#klarna-icon-container-selection")
+        if (!container) {
+          addLog("warning", "Icon Mount Warning (Selection)", "Container element not found: #klarna-icon-container-selection")
+          return
+        }
+        
+        const iconComponent = klarnaPresentation.icon.component()
+        if (iconComponent && iconComponent.mount) {
+          klarnaIconSelectionRef.current = iconComponent.mount("#klarna-icon-container-selection")
+          addLog("success", "Icon Mounted (Selection)", "Klarna icon component mounted in selection area")
+        }
+      } catch (error) {
+        addLog("error", "Icon Mount Error (Selection)", "Failed to mount Klarna icon component in selection area", error)
+      }
+    }
+  }, [klarnaPresentation, addLog])
+
+  const mountKlarnaDetailedComponents = useCallback(() => {
+    if (!klarnaPresentation || paymentMethod !== PAYMENT_METHODS.KLARNA) return
+    
+    // Only mount enriched subheader in detailed area (only when Klarna is selected)
+    if (klarnaPresentation.subheader && klarnaPresentation.subheader.enriched && klarnaPresentation.subheader.enriched.component) {
+      try {
+        const container = document.querySelector("#klarna-enriched-subheader-container")
+        if (!container) {
+          addLog("warning", "Enriched Subheader Mount Warning", "Container element not found: #klarna-enriched-subheader-container")
+          return
+        }
+        
+        const enrichedSubheaderComponent = klarnaPresentation.subheader.enriched.component()
+        if (enrichedSubheaderComponent && enrichedSubheaderComponent.mount) {
+          klarnaEnrichedSubheaderRef.current = enrichedSubheaderComponent.mount("#klarna-enriched-subheader-container")
+          addLog("success", "Enriched Subheader Mounted", "Klarna enriched subheader component mounted in detailed area")
+          setMountingStatus(prev => ({ ...prev, detailedMounted: true }))
+        }
+      } catch (error) {
+        addLog("error", "Enriched Subheader Mount Error", "Failed to mount Klarna enriched subheader component", error)
+      }
+    }
+  }, [klarnaPresentation, paymentMethod, addLog])
+
+  const unmountKlarnaComponents = useCallback(() => {
+    // Cleanup selection area components
+    if (klarnaHeaderSelectionRef.current) {
+      try {
+        klarnaHeaderSelectionRef.current.unmount()
+        addLog("info", "Header Unmounted (Selection)", "Klarna header component unmounted from selection area")
+      } catch (error) {
+        addLog("error", "Header Unmount Error (Selection)", "Failed to unmount Klarna header component from selection area", error)
+      }
+      klarnaHeaderSelectionRef.current = null
+      setMountingStatus(prev => ({ ...prev, selectionMounted: false }))
+    }
+    
+    if (klarnaSubheaderSelectionRef.current) {
+      try {
+        klarnaSubheaderSelectionRef.current.unmount()
+        addLog("info", "Subheader Unmounted (Selection)", "Klarna subheader component unmounted from selection area")
+      } catch (error) {
+        addLog("error", "Subheader Unmount Error (Selection)", "Failed to unmount Klarna subheader component from selection area", error)
+      }
+      klarnaSubheaderSelectionRef.current = null
+      setMountingStatus(prev => ({ ...prev, shortSubheaderSelectionMounted: false }))
+    }
+    
+    if (klarnaIconSelectionRef.current) {
+      try {
+        klarnaIconSelectionRef.current.unmount()
+        addLog("info", "Icon Unmounted (Selection)", "Klarna icon component unmounted from selection area")
+      } catch (error) {
+        addLog("error", "Icon Unmount Error (Selection)", "Failed to unmount Klarna icon component from selection area", error)
+      }
+      klarnaIconSelectionRef.current = null
+    }
+
+    // Cleanup detailed area components - only enriched subheader
+    if (klarnaEnrichedSubheaderRef.current) {
+      try {
+        klarnaEnrichedSubheaderRef.current.unmount()
+        addLog("info", "Enriched Subheader Unmounted", "Klarna enriched subheader component unmounted from detailed area")
+      } catch (error) {
+        addLog("error", "Enriched Subheader Unmount Error", "Failed to unmount Klarna enriched subheader component", error)
+      }
+      klarnaEnrichedSubheaderRef.current = null
+      setMountingStatus(prev => ({ ...prev, detailedMounted: false }))
+    }
+  }, [addLog])
+
+  // Mount/unmount Klarna header and icon when presentation is available
+  useEffect(() => {
+    if (!klarnaPresentation) return
+    
+    // Use requestAnimationFrame to ensure DOM is ready
+    const timeoutId = setTimeout(() => {
+      requestAnimationFrame(() => {
+        mountKlarnaComponents()
+      })
+    }, 100) // Small delay to ensure DOM elements are rendered
+    
+    return () => {
+      clearTimeout(timeoutId)
+      unmountKlarnaComponents()
+    }
+  }, [klarnaPresentation, mountKlarnaComponents, unmountKlarnaComponents])
+
+  // Mount detailed components when Klarna is selected
+  useEffect(() => {
+    if (paymentMethod === PAYMENT_METHODS.KLARNA && klarnaPresentation) {
+      // Use requestAnimationFrame to ensure DOM is ready
+      const timeoutId = setTimeout(() => {
+        requestAnimationFrame(() => {
+          mountKlarnaDetailedComponents()
+        })
+      }, 100) // Small delay to ensure DOM elements are rendered
+      
+      return () => clearTimeout(timeoutId)
+    } else {
+      // Reset detailed mounting status when Klarna is not selected
+      setMountingStatus(prev => ({ 
+        ...prev, 
+        detailedMounted: false
+      }))
+    }
+  }, [paymentMethod, klarnaPresentation, mountKlarnaDetailedComponents])
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -39,11 +267,7 @@ export default function CheckoutPayment() {
     }
   }
 
-  const getSubmitButtonText = () => {
-    if (isSubmitting) return "Processing..."
-    if (paymentMethod === PAYMENT_METHODS.KLARNA) return "Continue with Klarna"
-    return "Complete Order"
-  }
+  // getSubmitButtonText function removed - now using useMemo submitButtonText
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -79,7 +303,14 @@ export default function CheckoutPayment() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <CreditCard className="h-5 w-5" aria-hidden="true" />
+                  <div className="w-9 h-9 flex items-center justify-center">
+                    <img 
+                      src="https://checkoutshopper-live.adyen.com/checkoutshopper/images/logos/medium/card.png" 
+                      alt="Payment Methods" 
+                      className="max-w-9 max-h-9 w-auto h-auto object-contain"
+                      loading="lazy"
+                    />
+                  </div>
                   Payment Method
                 </CardTitle>
               </CardHeader>
@@ -89,32 +320,111 @@ export default function CheckoutPayment() {
                   onValueChange={(value) => setPaymentMethod(value as PaymentData["method"])}
                   aria-label="Select payment method"
                 >
-                  <div className="flex items-center space-x-3 p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center space-x-3 p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors min-h-[64px]">
                     <RadioGroupItem value={PAYMENT_METHODS.CARD} id="card" />
-                    <Label htmlFor="card" className="flex items-center gap-2 cursor-pointer flex-1">
-                      <CreditCard className="h-4 w-4" aria-hidden="true" />
-                      Credit or Debit Card
+                    <Label htmlFor="card" className="flex items-center gap-3 cursor-pointer flex-1">
+                      <div className="w-9 h-9 flex items-center justify-center flex-shrink-0">
+                        <img 
+                          src="https://checkoutshopper-live.adyen.com/checkoutshopper/images/logos/medium/card.png" 
+                          alt="Credit or Debit Card" 
+                          className="max-w-9 max-h-9 w-auto h-auto object-contain"
+                          loading="lazy"
+                        />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-medium">Credit or Debit Card</span>
+                        <span className="text-sm text-muted-foreground">Visa, Mastercard, American Express</span>
+                      </div>
                     </Label>
                   </div>
-                  <div className="flex items-center space-x-3 p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors">
+                  {/* Klarna payment option with expandable details INSIDE the same box */}
+                  <div className="border border-border rounded-lg hover:bg-muted/50 transition-colors min-h-[64px] relative flex flex-col">
+                    {/* Klarna selector row */}
+                    <div className="flex items-center space-x-3 p-4">
+                      <RadioGroupItem value={PAYMENT_METHODS.KLARNA} id="klarna" />
+                      <Label htmlFor="klarna" className="flex items-center gap-3 cursor-pointer flex-1">
+                        <div className="w-9 h-9 flex items-center justify-center flex-shrink-0">
+                          <div id="klarna-icon-container-selection" className="max-w-9 max-h-9 w-auto h-auto flex items-center justify-center [&>*]:max-w-full [&>*]:max-h-full [&>*]:w-auto [&>*]:h-auto [&>*]:object-contain">
+                            {/* Klarna icon will be mounted here */}
+                            {klarnaLoading && <Skeleton className="w-9 h-9" />}
+                            {!klarnaLoading && !klarnaPresentation && <div className="w-9 h-9 bg-muted/50 rounded-sm" />}
+                          </div>
+                        </div>
+                        <div className="flex flex-col flex-1 min-w-0">
+                          <div id="klarna-header-container-selection" className="flex items-center text-sm font-medium leading-tight">
+                            {/* Klarna header will be mounted here */}
+                            {klarnaLoading && <Skeleton className="h-4 w-20" />}
+                          </div>
+                          <div id="klarna-subheader-container-selection" className="flex items-center text-xs text-muted-foreground leading-tight mt-0.5">
+                            {/* Klarna subheader will be mounted here */}
+                            {klarnaLoading && <Skeleton className="h-3 w-24" />}
+                          </div>
+                        </div>
+                      </Label>
+                    </div>
+                    {/* Klarna expanded details below selector row, inside the same box */}
+                    {paymentMethod === PAYMENT_METHODS.KLARNA && (
+                      <div className="border-t border-border pt-4 pb-4 px-8">
+                        {klarnaLoading && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />
+                            Loading Klarna payment options...
+                          </div>
+                        )}
+                        {klarnaError && (
+                          <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                            <p className="text-sm text-destructive">
+                              Failed to load Klarna payment options: {klarnaError.message}
+                            </p>
+                            <button
+                              onClick={retry}
+                              className="mt-2 text-sm text-primary hover:underline"
+                            >
+                              Try again
+                            </button>
+                          </div>
+                        )}
+                        
+                        {/* Only show enriched subheader from Klarna presentation */}
+                        <div id="klarna-enriched-subheader-container" className="min-h-[24px]">
+                          {/* Klarna enriched subheader will be mounted here */}
+                          {klarnaLoading && <Skeleton className="h-6 w-64" />}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center space-x-3 p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors min-h-[64px]">
                     <RadioGroupItem value={PAYMENT_METHODS.PAYPAL} id="paypal" />
-                    <Label htmlFor="paypal" className="flex items-center gap-2 cursor-pointer flex-1">
-                      <Wallet className="h-4 w-4" aria-hidden="true" />
-                      PayPal
+                    <Label htmlFor="paypal" className="flex items-center gap-3 cursor-pointer flex-1">
+                      <div className="w-9 h-9 flex items-center justify-center flex-shrink-0">
+                        <img 
+                          src="https://checkoutshopper-live.adyen.com/checkoutshopper/images/logos/medium/paypal.png" 
+                          alt="PayPal" 
+                          className="max-w-10 max-h-9 w-auto h-auto object-contain"
+                          loading="lazy"
+                        />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-medium">PayPal</span>
+                        <span className="text-sm text-muted-foreground">Pay with your PayPal account</span>
+                      </div>
                     </Label>
                   </div>
-                  <div className="flex items-center space-x-3 p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors">
-                    <RadioGroupItem value={PAYMENT_METHODS.KLARNA} id="klarna" />
-                    <Label htmlFor="klarna" className="flex items-center gap-2 cursor-pointer flex-1">
-                      <ShoppingBag className="h-4 w-4" aria-hidden="true" />
-                      Klarna
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-3 p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center space-x-3 p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors min-h-[64px]">
                     <RadioGroupItem value={PAYMENT_METHODS.BANK} id="bank" />
-                    <Label htmlFor="bank" className="flex items-center gap-2 cursor-pointer flex-1">
-                      <Building2 className="h-4 w-4" aria-hidden="true" />
-                      Bank Transfer
+                    <Label htmlFor="bank" className="flex items-center gap-3 cursor-pointer flex-1">
+                      <div className="w-9 h-9 flex items-center justify-center flex-shrink-0">
+                        <img 
+                          src="https://checkoutshopper-live.adyen.com/checkoutshopper/images/logos/medium/bank.png" 
+                          alt="Bank Transfer" 
+                          className="max-w-9 max-h-9 w-auto h-auto object-contain"
+                          loading="lazy"
+                        />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-medium">Bank Transfer</span>
+                        <span className="text-sm text-muted-foreground">Direct bank account transfer</span>
+                      </div>
                     </Label>
                   </div>
                 </RadioGroup>
@@ -279,7 +589,7 @@ export default function CheckoutPayment() {
                     <Checkbox
                       id="differentBilling"
                       checked={differentBilling}
-                      onCheckedChange={setDifferentBilling}
+                      onCheckedChange={(checked) => setDifferentBilling(checked === true)}
                       aria-describedby="differentBilling-description"
                     />
                     <Label htmlFor="differentBilling">Billing address is different from shipping address</Label>
@@ -370,7 +680,7 @@ export default function CheckoutPayment() {
               <CardContent className="space-y-4">
                 {/* Cart Items */}
                 <div className="space-y-4" role="list" aria-label="Cart items">
-                  {MOCK_CART_ITEMS.map((item) => (
+                  {cartItems.map((item) => (
                     <div key={item.id} className="flex items-center gap-3" role="listitem">
                       <div className="relative">
                         <img
@@ -378,6 +688,7 @@ export default function CheckoutPayment() {
                           alt={item.name}
                           className="w-16 h-16 object-cover rounded-md border"
                           loading="lazy"
+                          decoding="async"
                         />
                         {item.quantity > 1 && (
                           <span
@@ -427,7 +738,7 @@ export default function CheckoutPayment() {
                   disabled={isSubmitting}
                   aria-describedby="submit-description"
                 >
-                  {getSubmitButtonText()}
+                  {submitButtonText}
                 </Button>
 
                 <p id="submit-description" className="text-xs text-muted-foreground text-center mt-4 leading-relaxed">
@@ -452,6 +763,13 @@ export default function CheckoutPayment() {
           </div>
         </div>
       </form>
+      
+      {/* Klarna Debug Console */}
+      <KlarnaDebugAlert 
+        logs={logs} 
+        onClearLogs={clearLogs}
+        className="border-primary/20" 
+      />
     </div>
   )
 }

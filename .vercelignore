@@ -1,0 +1,19 @@
+# Exclude company-specific dependency files
+.npmrc
+package-lock.json
+pnpm-lock.yaml
+node_modules/
+
+# Exclude local development files
+.env.local
+.env.*.local
+
+# Exclude IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Exclude OS generated files
+.DS_Store
+Thumbs.db

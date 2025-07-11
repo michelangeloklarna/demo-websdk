@@ -31,6 +31,12 @@ interface RootLayoutProps {
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en">
+      <head>
+        {/* DNS prefetch for Klarna CDN */}
+        <link rel="dns-prefetch" href="//js.klarna.com" />
+        {/* Preload Klarna SDK for faster loading */}
+        <link rel="preload" href="https://js.klarna.com/web-sdk/v2/klarna.mjs" as="script" crossOrigin="anonymous" />
+      </head>
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>{children}</body>
     </html>
   )
