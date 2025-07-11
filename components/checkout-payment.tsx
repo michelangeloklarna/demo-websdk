@@ -172,38 +172,6 @@ export default function CheckoutPayment() {
                     </div>
                   </fieldset>
                 )}
-
-                {paymentMethod === PAYMENT_METHODS.KLARNA && (
-                  <div className="mt-6 p-4 bg-muted/30 rounded-lg" role="region" aria-labelledby="klarna-info">
-                    <div className="flex items-center gap-2 mb-3">
-                      <ShoppingBag className="h-5 w-5 text-primary" aria-hidden="true" />
-                      <h3 id="klarna-info" className="font-semibold">
-                        Pay with Klarna
-                      </h3>
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Split your purchase into 4 interest-free payments. No fees when you pay on time.
-                    </p>
-                    <div className="grid grid-cols-4 gap-2 text-xs" role="list" aria-label="Payment schedule">
-                      <div className="text-center p-2 bg-background rounded border" role="listitem">
-                        <div className="font-semibold">{formatCurrency(orderSummary.total / 4)}</div>
-                        <div className="text-muted-foreground">Today</div>
-                      </div>
-                      <div className="text-center p-2 bg-background rounded border" role="listitem">
-                        <div className="font-semibold">{formatCurrency(orderSummary.total / 4)}</div>
-                        <div className="text-muted-foreground">2 weeks</div>
-                      </div>
-                      <div className="text-center p-2 bg-background rounded border" role="listitem">
-                        <div className="font-semibold">{formatCurrency(orderSummary.total / 4)}</div>
-                        <div className="text-muted-foreground">4 weeks</div>
-                      </div>
-                      <div className="text-center p-2 bg-background rounded border" role="listitem">
-                        <div className="font-semibold">{formatCurrency(orderSummary.total / 4)}</div>
-                        <div className="text-muted-foreground">6 weeks</div>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </CardContent>
             </Card>
 
