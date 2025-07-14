@@ -34,11 +34,10 @@ This project is a demo ecommerce checkout application focused on showcasing paym
    cd demo-websdk
    ```
 
-````
 2. **Install dependencies:**
    ```sh
-pnpm install
-````
+   pnpm install
+   ```
 
 ### Running Locally
 
@@ -63,6 +62,18 @@ Open [http://localhost:3000](http://localhost:3000) in your browser to view the 
 - `components/` — UI and layout components (shadcn UI based)
 - `lib/` — Utility functions and constants
 - `styles/` — Global styles (Tailwind CSS)
+
+## Klarna Integration
+
+The Klarna integration is implemented using the Klarna Payments API. The frontend collects the necessary payment information and sends it to a Next.js API route (`app/api/klarna-authorize/route.ts`) for processing. The API route then makes a request to the Klarna API to authorize the payment.
+
+To use the Klarna integration, you will need to provide your Klarna API credentials in the `.env.local` file. You can find your API credentials in the Klarna Merchant Portal.
+
+```
+NEXT_PUBLIC_KLARNA_CLIENT_ID=<your-client-id>
+NEXT_PUBLIC_KLARNA_PARTNER_ACCOUNT_ID=<your-partner-account-id>
+KLARNA_API_TOKEN=<your-api-token>
+```
 
 ## Deployment
 
