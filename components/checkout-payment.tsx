@@ -13,12 +13,13 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
-import { MOCK_CART_ITEMS, PAYMENT_METHODS } from "@/lib/constants"
+import { MOCK_CART_ITEMS, PAYMENT_METHODS, getCurrencyForLocale } from "@/lib/constants"
 import { calculateOrderSummary, formatCurrency } from "@/lib/utils"
 import type { PaymentData } from "@/types"
 import { useKlarna } from "@/hooks/use-klarna"
 import { useKlarnaLogger } from "@/hooks/use-klarna-logger"
 import { KlarnaDebugAlert } from "@/components/klarna-debug-alert"
+import { CurrencyLocaleSelector, CurrencyLocaleDisplay } from "@/components/currency-locale-selector"
 
 // Generic Klarna Component Wrapper - handles mounting any Klarna presentation component
 const KlarnaComponent = ({
@@ -273,6 +274,11 @@ export default function CheckoutPayment() {
   const [differentBilling, setDifferentBilling] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  
+  // Currency and locale state
+  const [currency, setCurrency] = useState("USD")
+  const [locale, setLocale] = useState("en-US")
+  
   const [formData, setFormData] = useState<FormData>({
     firstName: "Test",
     lastName: "Person-us",
@@ -339,13 +345,31 @@ export default function CheckoutPayment() {
   // Initialize Klarna logging
   const { logs, addLog, clearLogs } = useKlarnaLogger()
 
-  // Load Klarna WebSDK with logging
+  // Load Klarna WebSDK with logging - now uses selected currency and locale
   const { klarnaPresentation, isLoading: klarnaLoading } = useKlarna({
     amount: orderSummary.total,
-    currency: "USD",
-    locale: "en-US",
+    currency: currency,
+    locale: locale,
     onLog: addLog,
   })
+
+  // Handle currency change
+  const handleCurrencyChange = useCallback((newCurrency: string) => {
+    setCurrency(newCurrency)
+    addLog("info", "Currency Changed", `Currency changed to ${newCurrency}`)
+  }, [addLog])
+
+  // Handle locale change and auto-select appropriate currency
+  const handleLocaleChange = useCallback((newLocale: string) => {
+    setLocale(newLocale)
+    addLog("info", "Locale Changed", `Locale changed to ${newLocale}`)
+    
+    // Auto-select appropriate currency for the new locale
+    const newCurrency = getCurrencyForLocale(newLocale)
+    // Always set currency to ensure consistency, let React handle deduplication
+    setCurrency(newCurrency)
+    addLog("info", "Currency Auto-Selected", `Currency auto-selected to ${newCurrency} for locale ${newLocale}`)
+  }, [addLog])
 
   // Note: All Klarna component mounting is now handled by individual wrapper components:
   // KlarnaIcon, KlarnaHeader, KlarnaShortSubheader, and KlarnaEnrichedSubheader
@@ -356,7 +380,7 @@ export default function CheckoutPayment() {
       // Button appearance configuration
       shape: "default" as const,
       theme: "default" as const,
-      locale: "en-US",
+      locale: locale,
 
       // Button identification
       id: "klarna-payment-button",
@@ -411,7 +435,8 @@ export default function CheckoutPayment() {
 
         // Call internal API endpoint which will call Klarna API
         const requestPayload = {
-          currency: "USD",
+          currency: currency,
+          locale: locale,
           orderSummary: orderSummary,
           cartItems: cartItems,
           shippingAddress: shippingAddress,
@@ -490,7 +515,7 @@ export default function CheckoutPayment() {
           })
       },
     }),
-    [orderSummary, cartItems, addLog]
+    [orderSummary, cartItems, addLog, currency, locale]
   )
 
   // Effect to handle Klarna payment button mounting/unmounting
@@ -517,9 +542,9 @@ export default function CheckoutPayment() {
 
       try {
         addLog("info", "Payment Button Mounting", "Mounting payment button", {
-          currency: "USD",
+          currency: currency,
           amount: orderSummary.total,
-          locale: "en-US",
+          locale: locale,
         })
 
         // Clear container before mounting
@@ -557,7 +582,7 @@ export default function CheckoutPayment() {
         klarnaButtonRef.current = null
       }
     }
-  }, [paymentMethod, klarnaPresentation, orderSummary.total, addLog, buttonConfig])
+  }, [paymentMethod, klarnaPresentation, orderSummary.total, addLog, buttonConfig, currency, locale])
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -615,9 +640,31 @@ export default function CheckoutPayment() {
             Checkout
           </span>
         </nav>
-        <h1 className="text-4xl font-bold text-foreground">Checkout</h1>
-        <p className="text-muted-foreground mt-3 text-lg">Complete your purchase securely</p>
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-4xl font-bold text-foreground">Checkout</h1>
+            <p className="text-muted-foreground mt-3 text-lg">Complete your purchase securely</p>
+          </div>
+          <div className="flex flex-col gap-2">
+            <CurrencyLocaleDisplay currency={currency} locale={locale} className="lg:justify-end" />
+          </div>
+        </div>
       </div>
+
+      {/* Currency and Locale Selection */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Region & Currency Settings</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <CurrencyLocaleSelector
+            currency={currency}
+            locale={locale}
+            onCurrencyChange={handleCurrencyChange}
+            onLocaleChange={handleLocaleChange}
+          />
+        </CardContent>
+      </Card>
 
       <form onSubmit={handleSubmit} noValidate>
         <div className="grid lg:grid-cols-3 gap-12">
@@ -1097,7 +1144,7 @@ export default function CheckoutPayment() {
                         <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
                       </div>
                       <p className="text-sm font-medium">
-                        {formatCurrency(item.price * item.quantity)}
+                        {formatCurrency(item.price * item.quantity, currency, locale)}
                       </p>
                     </div>
                   ))}
@@ -1109,20 +1156,20 @@ export default function CheckoutPayment() {
                 <div className="space-y-3">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span className="font-medium">{formatCurrency(orderSummary.subtotal)}</span>
+                    <span className="font-medium">{formatCurrency(orderSummary.subtotal, currency, locale)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Shipping</span>
-                    <span className="font-medium">{formatCurrency(orderSummary.shipping)}</span>
+                    <span className="font-medium">{formatCurrency(orderSummary.shipping, currency, locale)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Tax</span>
-                    <span className="font-medium">{formatCurrency(orderSummary.tax)}</span>
+                    <span className="font-medium">{formatCurrency(orderSummary.tax, currency, locale)}</span>
                   </div>
                   <Separator className="my-4" />
                   <div className="flex justify-between text-lg font-semibold">
                     <span>Total</span>
-                    <span>{formatCurrency(orderSummary.total)}</span>
+                    <span>{formatCurrency(orderSummary.total, currency, locale)}</span>
                   </div>
                 </div>
 

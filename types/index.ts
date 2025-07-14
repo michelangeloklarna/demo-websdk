@@ -76,3 +76,34 @@ export interface KlarnaSDK {
   reauthorize: () => Promise<void>
   finalize: () => Promise<void>
 }
+
+// Currency and Locale Types
+export interface Currency {
+  code: string
+  name: string
+  symbol: string
+}
+
+export interface Locale {
+  code: string
+  name: string
+  country: string
+  countryCode: string
+}
+
+export interface Country {
+  code: string
+  name: string
+  currency: string
+  locales: string[]
+}
+
+export interface CurrencyLocaleSelection {
+  currency: string
+  locale: string
+}
+
+// Type for the supported countries from constants
+export type SupportedCountry = typeof import("@/lib/constants").SUPPORTED_COUNTRIES[number]
+export type SupportedCurrency = typeof import("@/lib/constants").SUPPORTED_CURRENCIES[number]
+export type SupportedLocale = typeof import("@/lib/constants").SUPPORTED_LOCALES[number]

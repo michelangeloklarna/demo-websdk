@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 
 export async function POST(request: NextRequest) {
   try {
-    const { currency, orderSummary, cartItems, shippingAddress, billingAddress } =
+    const { currency, locale, orderSummary, cartItems, shippingAddress, billingAddress } =
       await request.json()
 
     // Validate required fields
@@ -14,6 +14,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    // Log the locale for debugging
+    console.log("Payment request with locale:", locale)
 
     // Convert amount to minor units (cents) - use frontend calculated total
     const amountInMinorUnits = Math.round(orderSummary.total * 100)
