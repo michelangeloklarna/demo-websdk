@@ -49,7 +49,12 @@ class KlarnaSDKManager {
     this.loggers.delete(logger)
   }
 
-  private log(type: "info" | "success" | "warning" | "error", title: string, message: string, data?: any) {
+  private log(
+    type: "info" | "success" | "warning" | "error",
+    title: string,
+    message: string,
+    data?: any
+  ) {
     // Log to all registered loggers
     this.loggers.forEach(logger => {
       try {
@@ -58,7 +63,7 @@ class KlarnaSDKManager {
         // Ignore logger errors
       }
     })
-    
+
     // Fallback to console
     const consoleMethod = type === "error" ? "error" : type === "warning" ? "warn" : "log"
     console[consoleMethod](`[Klarna SDK Manager] ${title}: ${message}`, data || "")
@@ -82,7 +87,7 @@ class KlarnaSDKManager {
     this.log("info", "SDK Loading Started", "Beginning Klarna WebSDK initialization")
 
     this.loadPromise = this.performSDKLoad(locale)
-    
+
     try {
       this.sdk = await this.loadPromise
       this.log("success", "SDK Loaded Successfully", "Klarna SDK ready for use")
@@ -104,7 +109,7 @@ class KlarnaSDKManager {
 
       // Dynamic import with retry logic
       this.log("info", "Dynamic Import", "Loading Klarna WebSDK from CDN")
-      
+
       const importKlarna = new Function(
         'return import("https://js.klarna.com/web-sdk/v2/klarna.mjs")'
       )
@@ -118,14 +123,17 @@ class KlarnaSDKManager {
       const KlarnaSDK = module?.KlarnaSDK || module?.default || module
 
       if (!KlarnaSDK || typeof KlarnaSDK !== "function") {
-        throw new Error(`KlarnaSDK not found. Available exports: ${Object.keys(module || {}).join(", ")}`)
+        throw new Error(
+          `KlarnaSDK not found. Available exports: ${Object.keys(module || {}).join(", ")}`
+        )
       }
 
       // Initialize SDK with error handling
       const config = {
         clientId: process.env.NEXT_PUBLIC_KLARNA_CLIENT_ID || "klarna_test_client_***",
         products: ["PAYMENT"],
-        partnerAccountId: process.env.NEXT_PUBLIC_KLARNA_PARTNER_ACCOUNT_ID || "krn:partner:global:account:***",
+        partnerAccountId:
+          process.env.NEXT_PUBLIC_KLARNA_PARTNER_ACCOUNT_ID || "krn:partner:global:account:***",
         locale,
         environment: process.env.NODE_ENV === "production" ? "production" : "playground",
         region: "na",
@@ -141,11 +149,16 @@ class KlarnaSDKManager {
       } catch (initError) {
         // Handle custom element registry conflicts during initialization
         if (this.isCustomElementError(initError)) {
-          this.log("warning", "Custom Element Conflict During Init", "Attempting recovery", initError)
-          
+          this.log(
+            "warning",
+            "Custom Element Conflict During Init",
+            "Attempting recovery",
+            initError
+          )
+
           // Try to clear conflicts and retry once
           this.handleCustomElementConflicts()
-          
+
           // Wait a bit and retry
           await new Promise(resolve => setTimeout(resolve, 100))
           klarna = await KlarnaSDK(config)
@@ -160,7 +173,7 @@ class KlarnaSDKManager {
 
       this.log("success", "SDK Initialized", "Klarna SDK ready", {
         hasPayment: !!klarna.Payment,
-        methods: Object.keys(klarna)
+        methods: Object.keys(klarna),
       })
 
       return klarna
@@ -171,26 +184,32 @@ class KlarnaSDKManager {
   }
 
   private isCustomElementError(error: any): boolean {
-    return error instanceof DOMException && 
-           error.name === 'NotSupportedError' && 
-           error.message.includes('CustomElementRegistry')
+    return (
+      error instanceof DOMException &&
+      error.name === "NotSupportedError" &&
+      error.message.includes("CustomElementRegistry")
+    )
   }
 
   private handleCustomElementConflicts() {
     // Log known custom elements that might conflict
-    if (typeof window !== 'undefined' && window.customElements) {
+    if (typeof window !== "undefined" && window.customElements) {
       const knownKlarnaElements = [
-        'test-drive-badge',
-        'klarna-placement',
-        'klarna-payment-view',
-        'klarna-express-button'
+        "test-drive-badge",
+        "klarna-placement",
+        "klarna-payment-view",
+        "klarna-express-button",
       ]
 
       knownKlarnaElements.forEach(elementName => {
         try {
           // Check if element is already defined
           if (window.customElements.get(elementName)) {
-            this.log("warning", "Custom Element Exists", `Custom element '${elementName}' already defined`)
+            this.log(
+              "warning",
+              "Custom Element Exists",
+              `Custom element '${elementName}' already defined`
+            )
           }
         } catch (e) {
           // Ignore errors when checking
@@ -205,7 +224,7 @@ class KlarnaSDKManager {
     }
 
     const key = `${amount}-${currency}-${locale}`
-    
+
     // Return cached presentation if available
     if (this.presentations.has(key)) {
       this.log("info", "Presentation Cache Hit", "Using cached presentation")
@@ -222,7 +241,7 @@ class KlarnaSDKManager {
       this.log("info", "Creating Presentation", "Getting payment presentation", presentationConfig)
 
       let presentation: any
-      
+
       // Try different presentation methods
       if (this.sdk.Payment && typeof this.sdk.Payment.presentation === "function") {
         presentation = await this.sdk.Payment.presentation(presentationConfig)
@@ -241,16 +260,25 @@ class KlarnaSDKManager {
       return presentation
     } catch (error) {
       if (this.isCustomElementError(error)) {
-        this.log("warning", "Custom Element Conflict in Presentation", "Attempting to use cached presentation", error)
-        
+        this.log(
+          "warning",
+          "Custom Element Conflict in Presentation",
+          "Attempting to use cached presentation",
+          error
+        )
+
         // Try to return any cached presentation as fallback
         const cachedPresentation = Array.from(this.presentations.values())[0]
         if (cachedPresentation) {
-          this.log("info", "Using Fallback Presentation", "Using cached presentation due to conflict")
+          this.log(
+            "info",
+            "Using Fallback Presentation",
+            "Using cached presentation due to conflict"
+          )
           return cachedPresentation
         }
       }
-      
+
       this.log("error", "Presentation Error", "Failed to create presentation", error)
       throw error
     }
@@ -294,26 +322,29 @@ export function useKlarna({
   const manager = KlarnaSDKManager.getInstance()
 
   // Memoized log function
-  const log = useCallback((
-    type: "info" | "success" | "warning" | "error",
-    title: string,
-    message: string,
-    data?: any
-  ) => {
-    if (onLog) {
-      onLog(type, title, message, data)
-    }
-  }, [onLog])
+  const log = useCallback(
+    (
+      type: "info" | "success" | "warning" | "error",
+      title: string,
+      message: string,
+      data?: any
+    ) => {
+      if (onLog) {
+        onLog(type, title, message, data)
+      }
+    },
+    [onLog]
+  )
 
   // Load SDK
   const loadSDK = useCallback(async () => {
     try {
       setIsLoading(true)
       setError(null)
-      
+
       const sdk = await manager.loadSDK(locale)
       setKlarnaSDK(sdk)
-      
+
       // Get presentation
       if (amount > 0) {
         const presentation = await manager.getPresentation(amount, currency, locale)

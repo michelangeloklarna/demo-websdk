@@ -104,6 +104,6 @@ export interface CurrencyLocaleSelection {
 }
 
 // Type for the supported countries from constants
-export type SupportedCountry = typeof import("@/lib/constants").SUPPORTED_COUNTRIES[number]
-export type SupportedCurrency = typeof import("@/lib/constants").SUPPORTED_CURRENCIES[number]
-export type SupportedLocale = typeof import("@/lib/constants").SUPPORTED_LOCALES[number]
+export type SupportedCountry = (typeof import("@/lib/constants").SUPPORTED_COUNTRIES)[number]
+export type SupportedCurrency = (typeof import("@/lib/constants").SUPPORTED_CURRENCIES)[number]
+export type SupportedLocale = (typeof import("@/lib/constants").SUPPORTED_LOCALES)[number]

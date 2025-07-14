@@ -1,22 +1,58 @@
 import { NextRequest, NextResponse } from "next/server"
 
+// Helper function to remove empty objects
+function cleanObject(obj: any): any {
+  if (!obj || typeof obj !== "object") {
+    return obj
+  }
+
+  const cleaned = Object.entries(obj).reduce((acc, [key, value]) => {
+    if (value !== null && value !== undefined && value !== "") {
+      if (typeof value === "object" && !Array.isArray(value)) {
+        const cleanedValue = cleanObject(value)
+        if (Object.keys(cleanedValue).length > 0) {
+          acc[key] = cleanedValue
+        }
+      } else {
+        acc[key] = value
+      }
+    }
+    return acc
+  }, {} as any)
+
+  return cleaned
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const { currency, locale, orderSummary, cartItems, shippingAddress, billingAddress } =
-      await request.json()
+    // Parse and log the entire request body
+    const body = await request.json();
+    console.log("🔍 Klarna API Request Body:", JSON.stringify(body, null, 2));
+
+    const {
+      currency,
+      locale,
+      orderSummary,
+      cartItems,
+      shippingAddress,
+      billingAddress,
+      useDifferentBilling,
+    } = body;
 
     // Validate required fields
     if (!currency || !orderSummary || !cartItems || !shippingAddress) {
       return NextResponse.json(
-        {
-          error: "Missing required fields: currency, orderSummary, cartItems, and shippingAddress",
-        },
+        { error: "Missing required fields" },
         { status: 400 }
       )
     }
 
-    // Log the locale for debugging
-    console.log("Payment request with locale:", locale)
+    console.log("💰 Klarna Payment Request:")
+    console.log("  Currency:", currency)
+    console.log("  Locale:", locale)
+    console.log("  Use different billing:", useDifferentBilling)
+    console.log("  Shipping:", shippingAddress)
+    console.log("  Billing:", billingAddress)
 
     // Convert amount to minor units (cents) - use frontend calculated total
     const amountInMinorUnits = Math.round(orderSummary.total * 100)
@@ -32,7 +68,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate unique payment transaction reference
-    const paymentTransactionReference = `payment_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    const paymentTransactionReference = `payment_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
     const purchaseReference = `order_${Date.now()}`
 
     // Convert cart items to Klarna line items format
@@ -58,7 +94,10 @@ export async function POST(request: NextRequest) {
       total_amount: Math.round(orderSummary.tax * 100),
     })
 
-    // Prepare the payment request for Klarna API
+    // Choose billing data: use billing address if different, otherwise use shipping
+    const customerBilling = useDifferentBilling ? billingAddress : shippingAddress
+
+    // Build Klarna payment request
     const paymentRequest = {
       currency: currency.toUpperCase(),
       request_payment_transaction: {
@@ -68,39 +107,37 @@ export async function POST(request: NextRequest) {
       supplementary_purchase_data: {
         purchase_reference: purchaseReference,
         line_items: lineItems,
-        shipping: [
-          {
-            recipient: {
-              given_name: shippingAddress.firstName || "Customer",
-              family_name: shippingAddress.lastName || "Name",
-              email: shippingAddress.email || "customer@example.com",
-              phone: shippingAddress.phone || "555-123-4567",
-            },
-            address: {
-              street_address: shippingAddress.address || "",
-              ...(shippingAddress.address2 &&
-                shippingAddress.address2.trim() !== "" && {
-                  street_address2: shippingAddress.address2,
-                }),
-              postal_code: shippingAddress.zip || "",
-              city: shippingAddress.city || "",
-              region: shippingAddress.state || "",
-              country: "US",
-            },
+        customer: {
+          given_name: customerBilling.firstName,
+          family_name: customerBilling.lastName,
+          email: customerBilling.email,
+          phone: customerBilling.phone,
+          address: {
+            street_address: customerBilling.address,
+            ...(customerBilling.address2 && { street_address2: customerBilling.address2 }),
+            postal_code: customerBilling.zip,
+            city: customerBilling.city,
+            region: customerBilling.state,
+            country: customerBilling.country,
           },
-        ],
-        billing_address: {
-          given_name: billingAddress.firstName || "Customer",
-          family_name: billingAddress.lastName || "Name",
-          email: billingAddress.email || "customer@example.com",
-          phone: billingAddress.phone || "555-123-4567",
-          street_address: billingAddress.address || "",
-          ...(billingAddress.address2 &&
-            billingAddress.address2.trim() !== "" && { street_address2: billingAddress.address2 }),
-          postal_code: billingAddress.zip || "",
-          city: billingAddress.city || "",
-          region: billingAddress.state || "",
-          country: "US",
+          shipping: [
+            {
+              recipient: {
+                given_name: shippingAddress.firstName,
+                family_name: shippingAddress.lastName,
+                email: shippingAddress.email,
+                phone: shippingAddress.phone,
+              },
+              address: {
+                street_address: shippingAddress.address,
+                ...(shippingAddress.address2 && { street_address2: shippingAddress.address2 }),
+                postal_code: shippingAddress.zip,
+                city: shippingAddress.city,
+                region: shippingAddress.state,
+                country: shippingAddress.country,
+              },
+            },
+          ],
         },
       },
       step_up_config: {
@@ -112,7 +149,26 @@ export async function POST(request: NextRequest) {
       },
     }
 
-    console.log("Klarna payment request:", JSON.stringify(paymentRequest, null, 2))
+    // Clean the payment request to remove empty fields
+    const cleanedPaymentRequest = cleanObject(paymentRequest)
+
+    // Log the entire Klarna authorize request body
+    console.log("🛒 Klarna Authorize Request Body:", JSON.stringify(cleanedPaymentRequest, null, 2));
+
+    console.log("📋 Final Klarna Request Structure:")
+    console.log("  Using different billing:", useDifferentBilling)
+    console.log("  Customer object (billing data):")
+    console.log("    Name:", cleanedPaymentRequest.supplementary_purchase_data?.customer?.given_name, cleanedPaymentRequest.supplementary_purchase_data?.customer?.family_name)
+    console.log("    Address:", cleanedPaymentRequest.supplementary_purchase_data?.customer?.address)
+    console.log("  Shipping array (shipping data):")
+    console.log("    Name:", cleanedPaymentRequest.supplementary_purchase_data?.customer?.shipping?.[0]?.recipient?.given_name, cleanedPaymentRequest.supplementary_purchase_data?.customer?.shipping?.[0]?.recipient?.family_name)
+    console.log("    Address:", cleanedPaymentRequest.supplementary_purchase_data?.customer?.shipping?.[0]?.address)
+    
+    if (!useDifferentBilling) {
+      console.log("  ✅ Same address mode: Customer object contains shipping address as billing data")
+    } else {
+      console.log("  ✅ Different address mode: Customer object contains separate billing data")
+    }
 
     // Call actual Klarna API
     const klarnaApiUrl = `https://api-global.test.klarna.com/v2/accounts/${partnerAccountId}/payment/authorize`
@@ -124,12 +180,13 @@ export async function POST(request: NextRequest) {
           "Content-Type": "application/json",
           Authorization: apiToken,
         },
-        body: JSON.stringify(paymentRequest),
+        body: JSON.stringify(cleanedPaymentRequest),
       })
 
       if (!klarnaResponse.ok) {
         const errorData = await klarnaResponse.json()
-        console.error("Klarna API error:", errorData)
+        // Only log the Klarna API response (error case)
+        console.log("❌ Klarna API Response:", JSON.stringify(errorData, null, 2));
         return NextResponse.json(
           { error: "Payment authorization failed", details: errorData },
           { status: klarnaResponse.status }
@@ -137,7 +194,8 @@ export async function POST(request: NextRequest) {
       }
 
       const klarnaData = await klarnaResponse.json()
-      console.log("Klarna API response:", JSON.stringify(klarnaData, null, 2))
+      // Only log the Klarna API response (success case)
+      console.log("✅ Klarna API Response:", JSON.stringify(klarnaData, null, 2));
       return NextResponse.json(klarnaData)
     } catch (apiError) {
       console.error("Error calling Klarna API:", apiError)

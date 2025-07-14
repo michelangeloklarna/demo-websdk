@@ -13,13 +13,25 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
-import { MOCK_CART_ITEMS, PAYMENT_METHODS, getCurrencyForLocale } from "@/lib/constants"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { MOCK_CART_ITEMS, PAYMENT_METHODS } from "@/lib/constants"
+import { COUNTRIES, getCurrencyForLocale, getCountryCodeForLocale } from "@/lib/country-data"
 import { calculateOrderSummary, formatCurrency } from "@/lib/utils"
 import type { PaymentData } from "@/types"
 import { useKlarna } from "@/hooks/use-klarna"
 import { useKlarnaLogger } from "@/hooks/use-klarna-logger"
 import { KlarnaDebugAlert } from "@/components/klarna-debug-alert"
-import { CurrencyLocaleSelector, CurrencyLocaleDisplay } from "@/components/currency-locale-selector"
+import {
+  CurrencyLocaleSelector,
+  CurrencyLocaleDisplay,
+} from "@/components/currency-locale-selector"
+
 
 // Generic Klarna Component Wrapper - handles mounting any Klarna presentation component
 const KlarnaComponent = ({
@@ -245,10 +257,47 @@ const KlarnaEnrichedSubheader = React.memo(
       className="min-h-[40px]"
       onLog={props.onLog}
     />
-  )
+  ),
+  (prevProps, nextProps) => {
+    // Custom comparison to prevent unnecessary re-renders
+    return prevProps.paymentPresentation === nextProps.paymentPresentation
+  }
 )
 
 // KlarnaEnrichedSubheader wrapper component now exists for consistency
+
+
+// Helper function to get prefilled address data based on locale
+const getPrefilledAddressData = (locale: string) => {
+  // Only prefill for en-US or es-US locales
+  if (locale === "en-US" || locale === "es-US") {
+    return {
+      firstName: "Test",
+      lastName: "Person-us",
+      address: "509 Amsterdam Ave",
+      address2: "",
+      city: "New York",
+      state: "NY",
+      zip: "10024-3941",
+      country: "US",
+      phone: "+13106683312",
+      email: "customer@email.us",
+    }
+  }
+  // Return empty data for other locales
+  return {
+    firstName: "",
+    lastName: "",
+    address: "",
+    address2: "",
+    city: "",
+    state: "",
+    zip: "",
+    country: "",
+    phone: "",
+    email: "",
+  }
+}
 
 interface FormData {
   firstName: string
@@ -258,7 +307,13 @@ interface FormData {
   city: string
   state: string
   zip: string
+  country: string // Country code (e.g., "US", "CA", "GB")
   phone: string
+  email: string
+  cardNumber: string
+  expiry: string
+  cvc: string
+  cardName: string
   billingFirstName: string
   billingLastName: string
   billingAddress: string
@@ -266,7 +321,9 @@ interface FormData {
   billingCity: string
   billingState: string
   billingZip: string
+  billingCountry: string // Country code (e.g., "US", "CA", "GB")
   billingPhone: string
+  billingEmail: string
 }
 
 export default function CheckoutPayment() {
@@ -274,28 +331,30 @@ export default function CheckoutPayment() {
   const [differentBilling, setDifferentBilling] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
-  
+
   // Currency and locale state
   const [currency, setCurrency] = useState("USD")
   const [locale, setLocale] = useState("en-US")
-  
-  const [formData, setFormData] = useState<FormData>({
-    firstName: "Test",
-    lastName: "Person-us",
-    address: "509 Amsterdam Ave",
-    address2: "",
-    city: "New York",
-    state: "NY",
-    zip: "10024-3941",
-    phone: "+13106683312",
-    billingFirstName: "",
-    billingLastName: "",
-    billingAddress: "",
-    billingAddress2: "",
-    billingCity: "",
-    billingState: "",
-    billingZip: "",
-    billingPhone: "",
+
+  const [formData, setFormData] = useState<FormData>(() => {
+    const prefilledData = getPrefilledAddressData(locale)
+    return {
+      ...prefilledData,
+      cardNumber: "",
+      expiry: "",
+      cvc: "",
+      cardName: "",
+      billingFirstName: "",
+      billingLastName: "",
+      billingAddress: "",
+      billingAddress2: "",
+      billingCity: "",
+      billingState: "",
+      billingZip: "",
+      billingCountry: "",
+      billingPhone: "",
+      billingEmail: "",
+    }
   })
 
   const orderSummary = useMemo(() => calculateOrderSummary(MOCK_CART_ITEMS), [])
@@ -312,8 +371,8 @@ export default function CheckoutPayment() {
     return "Complete Order"
   }, [isSubmitting, paymentMethod])
 
-  // Form validation functions - only shipping address is mandatory (excluding address2)
-  const isShippingAddressValid = useMemo(() => {
+  // Remove real-time validation for better performance - only validate on submit
+  const validateFormOnSubmit = useCallback(() => {
     const requiredFields: (keyof FormData)[] = [
       "firstName",
       "lastName",
@@ -321,20 +380,18 @@ export default function CheckoutPayment() {
       "city",
       "state",
       "zip",
+      "country",
       "phone",
+      "email",
     ]
     return requiredFields.every(field => formData[field]?.trim() !== "")
   }, [formData])
 
-  const isFormValid = useMemo(() => {
-    return isShippingAddressValid
-  }, [isShippingAddressValid])
-
-  // Handle form field changes
-  const handleFieldChange = useCallback((field: keyof FormData, value: string) => {
+  // Handle form field changes - simplified without debouncing for better UX
+  const handleFieldChange = useCallback((field: keyof FormData | string, value: string) => {
     setFormData(prev => ({
       ...prev,
-      [field]: value,
+      [field as keyof FormData]: value,
     }))
   }, [])
 
@@ -353,23 +410,36 @@ export default function CheckoutPayment() {
     onLog: addLog,
   })
 
-  // Handle currency change
+  // Handle currency change - optimized to reduce re-renders
   const handleCurrencyChange = useCallback((newCurrency: string) => {
     setCurrency(newCurrency)
-    addLog("info", "Currency Changed", `Currency changed to ${newCurrency}`)
-  }, [addLog])
+    // Use console.log instead of addLog to avoid re-render dependencies
+    console.log("Currency changed to:", newCurrency)
+  }, [])
 
-  // Handle locale change and auto-select appropriate currency
+  // Handle locale change - optimized to reduce re-renders
   const handleLocaleChange = useCallback((newLocale: string) => {
     setLocale(newLocale)
-    addLog("info", "Locale Changed", `Locale changed to ${newLocale}`)
-    
+    console.log("Locale changed to:", newLocale)
+
     // Auto-select appropriate currency for the new locale
     const newCurrency = getCurrencyForLocale(newLocale)
-    // Always set currency to ensure consistency, let React handle deduplication
     setCurrency(newCurrency)
-    addLog("info", "Currency Auto-Selected", `Currency auto-selected to ${newCurrency} for locale ${newLocale}`)
-  }, [addLog])
+    console.log("Currency auto-selected to:", newCurrency, "for locale", newLocale)
+
+    // Auto-select appropriate shipping address country for the new locale
+    const newCountry = getCountryCodeForLocale(newLocale)
+    
+    // Update form data with prefilled address data (only for en-US or es-US)
+    const prefilledData = getPrefilledAddressData(newLocale)
+    setFormData(prev => ({
+      ...prev,
+      ...prefilledData,
+      country: newCountry,
+    }))
+    console.log("Shipping address country auto-selected to:", newCountry, "for locale", newLocale)
+    console.log("Form data updated with prefilled address data:", prefilledData)
+  }, [])
 
   // Note: All Klarna component mounting is now handled by individual wrapper components:
   // KlarnaIcon, KlarnaHeader, KlarnaShortSubheader, and KlarnaEnrichedSubheader
@@ -390,66 +460,63 @@ export default function CheckoutPayment() {
 
       // Payment initiation function
       initiate: () => {
-        addLog("info", "Payment Button Initiated", "INITIATE function triggered")
+        addLog("info", "Payment Button Initiated", "Starting payment process")
 
-        // Simple form data collection without validation
-        const form = document.querySelector("form") as HTMLFormElement
-        const formDataObj = new FormData(form)
-
-        // Extract shipping address from form
-        const shippingAddress = {
-          firstName: formDataObj.get("firstName") as string,
-          lastName: formDataObj.get("lastName") as string,
-          address: formDataObj.get("address") as string,
-          address2: formDataObj.get("address2") as string,
-          city: formDataObj.get("city") as string,
-          state: formDataObj.get("state") as string,
-          zip: formDataObj.get("zip") as string,
-          phone: formDataObj.get("phone") as string,
-          email: "customer@email.us", // Test email address
+        // Extract addresses from form state
+        const shipping = {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          address: formData.address,
+          address2: formData.address2,
+          city: formData.city,
+          state: formData.state,
+          zip: formData.zip,
+          country: formData.country,
+          phone: formData.phone,
+          email: formData.email,
         }
 
-        // Read current billing checkbox state
-        const isDifferentBilling =
-          (document.querySelector("#differentBilling") as HTMLInputElement)?.checked || false
-
-        // Extract billing address if different from shipping
-        const billingAddress = isDifferentBilling
-          ? {
-              firstName: formDataObj.get("billingFirstName") as string,
-              lastName: formDataObj.get("billingLastName") as string,
-              address: formDataObj.get("billingAddress") as string,
-              address2: formDataObj.get("billingAddress2") as string,
-              city: formDataObj.get("billingCity") as string,
-              state: formDataObj.get("billingState") as string,
-              zip: formDataObj.get("billingZip") as string,
-              phone: formDataObj.get("billingPhone") as string,
-              email: shippingAddress.email, // Use same email as shipping
-            }
-          : shippingAddress
-
-        addLog("info", "Collected Form Data", "Shipping and billing addresses collected", {
-          shippingAddress,
-          billingAddress,
-        })
-
-        // Call internal API endpoint which will call Klarna API
-        const requestPayload = {
-          currency: currency,
-          locale: locale,
-          orderSummary: orderSummary,
-          cartItems: cartItems,
-          shippingAddress: shippingAddress,
-          billingAddress: billingAddress,
+        const billing = {
+          firstName: formData.billingFirstName,
+          lastName: formData.billingLastName,
+          address: formData.billingAddress,
+          address2: formData.billingAddress2,
+          city: formData.billingCity,
+          state: formData.billingState,
+          zip: formData.billingZip,
+          country: formData.billingCountry,
+          phone: formData.billingPhone,
+          email: formData.billingEmail,
         }
-        const requestBody = JSON.stringify(requestPayload)
+
+        // Simple logic: use different billing if checkbox is checked and billing fields are filled
+        const useDifferentBilling = differentBilling && billing.firstName && billing.address && billing.city && billing.zip && billing.country
+
+        console.log("🚀 Payment Data:")
+        console.log("  Checkbox checked:", differentBilling)
+        console.log("  Use different billing:", useDifferentBilling)
+        console.log("  Current formData state:", formData)
+        console.log("  Shipping:", shipping)
+        console.log("  Billing:", billing)
+
+        // API request
+        const payload = {
+          currency,
+          locale,
+          orderSummary,
+          cartItems,
+          shippingAddress: shipping,
+          billingAddress: billing,
+          useDifferentBilling,
+        }
+        const requestBody = JSON.stringify(payload)
         const requestStartTime = performance.now()
 
         addLog("info", "API Request", "Sending payment authorization request", {
           url: "/api/klarna-authorize",
           method: "POST",
           requestSize: new Blob([requestBody]).size,
-          payload: requestPayload,
+          payload: payload,
         })
 
         return fetch("/api/klarna-authorize", {
@@ -515,10 +582,10 @@ export default function CheckoutPayment() {
           })
       },
     }),
-    [orderSummary, cartItems, addLog, currency, locale]
+    [locale, addLog, currency, orderSummary, cartItems, formData, differentBilling]
   )
 
-  // Effect to handle Klarna payment button mounting/unmounting
+  // Effect to handle Klarna payment button mounting/unmounting - optimized
   useEffect(() => {
     // Only mount Klarna button when:
     // 1. Klarna is selected
@@ -532,20 +599,16 @@ export default function CheckoutPayment() {
       // Clean up previous button
       if (klarnaButtonRef.current) {
         try {
-          addLog("info", "Payment Button Unmounted", "Unmounting previous payment button")
+          console.log("Unmounting previous payment button")
           klarnaButtonRef.current.unmount()
         } catch (error) {
-          addLog("error", "Payment Button Unmount Error", "Error unmounting previous button", error)
+          console.error("Error unmounting previous button:", error)
         }
         klarnaButtonRef.current = null
       }
 
       try {
-        addLog("info", "Payment Button Mounting", "Mounting payment button", {
-          currency: currency,
-          amount: orderSummary.total,
-          locale: locale,
-        })
+        console.log("Mounting payment button")
 
         // Clear container before mounting
         if (klarnaButtonContainerRef.current) {
@@ -559,9 +622,9 @@ export default function CheckoutPayment() {
 
         // Store reference for cleanup
         klarnaButtonRef.current = presentationPaymentButton
-        addLog("success", "Payment Button Mounted", "Payment button mounted successfully")
+        console.log("Payment button mounted successfully")
       } catch (error) {
-        addLog("error", "Payment Button Mount Error", "Error mounting payment button", error)
+        console.error("Error mounting payment button:", error)
       }
     }
 
@@ -569,20 +632,15 @@ export default function CheckoutPayment() {
     return () => {
       if (klarnaButtonRef.current) {
         try {
-          addLog("info", "Payment Button Cleanup", "Unmounting payment button on cleanup")
+          console.log("Unmounting payment button on cleanup")
           klarnaButtonRef.current.unmount()
         } catch (error) {
-          addLog(
-            "error",
-            "Payment Button Cleanup Error",
-            "Error unmounting payment button during cleanup",
-            error
-          )
+          console.error("Error unmounting payment button during cleanup:", error)
         }
         klarnaButtonRef.current = null
       }
     }
-  }, [paymentMethod, klarnaPresentation, orderSummary.total, addLog, buttonConfig, currency, locale])
+  }, [paymentMethod, klarnaPresentation, buttonConfig])
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -593,7 +651,7 @@ export default function CheckoutPayment() {
       // Only handle non-Klarna payments here
       if (paymentMethod !== PAYMENT_METHODS.KLARNA) {
         // Validate form data
-        if (!isFormValid) {
+        if (!validateFormOnSubmit()) {
           throw new Error("Please fill in all required fields")
         }
 
@@ -828,6 +886,8 @@ export default function CheckoutPayment() {
                           autoComplete="cc-number"
                           required
                           aria-describedby="cardNumber-error"
+                          value={formData.cardNumber}
+                          onChange={(e) => handleFieldChange("cardNumber", e.target.value)}
                         />
                       </div>
                     </div>
@@ -841,6 +901,8 @@ export default function CheckoutPayment() {
                           autoComplete="cc-exp"
                           required
                           aria-describedby="expiry-error"
+                          value={formData.expiry}
+                          onChange={(e) => handleFieldChange("expiry", e.target.value)}
                         />
                       </div>
                       <div>
@@ -852,6 +914,8 @@ export default function CheckoutPayment() {
                           autoComplete="cc-csc"
                           required
                           aria-describedby="cvc-error"
+                          value={formData.cvc}
+                          onChange={(e) => handleFieldChange("cvc", e.target.value)}
                         />
                       </div>
                     </div>
@@ -864,6 +928,8 @@ export default function CheckoutPayment() {
                         autoComplete="cc-name"
                         required
                         aria-describedby="cardName-error"
+                        value={formData.cardName}
+                        onChange={(e) => handleFieldChange("cardName", e.target.value)}
                       />
                     </div>
                   </fieldset>
@@ -877,20 +943,18 @@ export default function CheckoutPayment() {
                 <CardTitle>Shipping Address</CardTitle>
               </CardHeader>
               <CardContent>
-                <fieldset className="space-y-4">
-                  <legend className="sr-only">Shipping address information</legend>
+                <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="firstName">First Name</Label>
                       <Input
                         id="firstName"
                         name="firstName"
+                        value={formData.firstName}
+                        onChange={(e) => handleFieldChange("firstName", e.target.value)}
                         placeholder="John"
                         autoComplete="given-name"
                         required
-                        aria-describedby="firstName-error"
-                        value={formData.firstName}
-                        onChange={e => handleFieldChange("firstName", e.target.value)}
                       />
                     </div>
                     <div>
@@ -898,51 +962,39 @@ export default function CheckoutPayment() {
                       <Input
                         id="lastName"
                         name="lastName"
+                        value={formData.lastName}
+                        onChange={(e) => handleFieldChange("lastName", e.target.value)}
                         placeholder="Doe"
                         autoComplete="family-name"
                         required
-                        aria-describedby="lastName-error"
-                        value={formData.lastName}
-                        onChange={e => handleFieldChange("lastName", e.target.value)}
                       />
                     </div>
                   </div>
+                  
                   <div>
                     <Label htmlFor="address">Address</Label>
                     <Input
                       id="address"
                       name="address"
+                      value={formData.address}
+                      onChange={(e) => handleFieldChange("address", e.target.value)}
                       placeholder="123 Main Street"
                       autoComplete="street-address"
                       required
-                      aria-describedby="address-error"
-                      value={formData.address}
-                      onChange={e => handleFieldChange("address", e.target.value)}
                     />
                   </div>
-                  <div>
-                    <Label htmlFor="address2">Address Line 2 (Optional)</Label>
-                    <Input
-                      id="address2"
-                      name="address2"
-                      placeholder="Apartment, suite, etc."
-                      autoComplete="address-line2"
-                      value={formData.address2}
-                      onChange={e => handleFieldChange("address2", e.target.value)}
-                    />
-                  </div>
+                  
                   <div className="grid grid-cols-3 gap-4">
                     <div>
                       <Label htmlFor="city">City</Label>
                       <Input
                         id="city"
                         name="city"
+                        value={formData.city}
+                        onChange={(e) => handleFieldChange("city", e.target.value)}
                         placeholder="New York"
                         autoComplete="address-level2"
                         required
-                        aria-describedby="city-error"
-                        value={formData.city}
-                        onChange={e => handleFieldChange("city", e.target.value)}
                       />
                     </div>
                     <div>
@@ -950,12 +1002,11 @@ export default function CheckoutPayment() {
                       <Input
                         id="state"
                         name="state"
+                        value={formData.state}
+                        onChange={(e) => handleFieldChange("state", e.target.value)}
                         placeholder="NY"
                         autoComplete="address-level1"
                         required
-                        aria-describedby="state-error"
-                        value={formData.state}
-                        onChange={e => handleFieldChange("state", e.target.value)}
                       />
                     </div>
                     <div>
@@ -963,28 +1014,58 @@ export default function CheckoutPayment() {
                       <Input
                         id="zip"
                         name="zip"
+                        value={formData.zip}
+                        onChange={(e) => handleFieldChange("zip", e.target.value)}
                         placeholder="10001"
                         autoComplete="postal-code"
                         required
-                        aria-describedby="zip-error"
-                        value={formData.zip}
-                        onChange={e => handleFieldChange("zip", e.target.value)}
                       />
                     </div>
                   </div>
+                  
                   <div>
-                    <Label htmlFor="phone">Phone Number</Label>
-                    <Input
-                      id="phone"
-                      name="phone"
-                      type="tel"
-                      placeholder="+1 (555) 123-4567"
-                      autoComplete="tel"
-                      required
-                      aria-describedby="phone-error"
-                      value={formData.phone}
-                      onChange={e => handleFieldChange("phone", e.target.value)}
-                    />
+                    <Label htmlFor="country">Country</Label>
+                    <Select value={formData.country} onValueChange={value => handleFieldChange("country", value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select country" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {COUNTRIES.map(country => (
+                          <SelectItem key={country.code} value={country.code}>
+                            {country.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="phone">Phone</Label>
+                      <Input
+                        id="phone"
+                        name="phone"
+                        type="tel"
+                        value={formData.phone}
+                        onChange={(e) => handleFieldChange("phone", e.target.value)}
+                        placeholder="+1 (555) 123-4567"
+                        autoComplete="tel"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => handleFieldChange("email", e.target.value)}
+                        placeholder="john@example.com"
+                        autoComplete="email"
+                        required
+                      />
+                    </div>
                   </div>
 
                   <div className="flex items-center space-x-2">
@@ -992,7 +1073,6 @@ export default function CheckoutPayment() {
                       id="differentBilling"
                       checked={differentBilling}
                       onCheckedChange={checked => setDifferentBilling(checked === true)}
-                      aria-describedby="differentBilling-description"
                     />
                     <Label htmlFor="differentBilling">
                       Billing address is different from shipping address
@@ -1000,20 +1080,19 @@ export default function CheckoutPayment() {
                   </div>
 
                   {differentBilling && (
-                    <div className="mt-8 p-6 border border-border rounded-lg bg-muted/30">
-                      <fieldset className="space-y-4">
-                        <legend className="font-semibold mb-6 text-lg">Billing Address</legend>
+                    <div className="mt-6 p-6 border rounded-lg bg-muted/30">
+                      <h3 className="font-semibold mb-4">Billing Address</h3>
+                      <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <Label htmlFor="billingFirstName">First Name</Label>
                             <Input
                               id="billingFirstName"
                               name="billingFirstName"
-                              placeholder="John"
-                              autoComplete="billing given-name"
-                              required
                               value={formData.billingFirstName}
-                              onChange={e => handleFieldChange("billingFirstName", e.target.value)}
+                              onChange={(e) => handleFieldChange("billingFirstName", e.target.value)}
+                              placeholder="John"
+                              required
                             />
                           </div>
                           <div>
@@ -1021,48 +1100,36 @@ export default function CheckoutPayment() {
                             <Input
                               id="billingLastName"
                               name="billingLastName"
-                              placeholder="Doe"
-                              autoComplete="billing family-name"
-                              required
                               value={formData.billingLastName}
-                              onChange={e => handleFieldChange("billingLastName", e.target.value)}
+                              onChange={(e) => handleFieldChange("billingLastName", e.target.value)}
+                              placeholder="Doe"
+                              required
                             />
                           </div>
                         </div>
+                        
                         <div>
                           <Label htmlFor="billingAddress">Address</Label>
                           <Input
                             id="billingAddress"
                             name="billingAddress"
-                            placeholder="456 Oak Avenue"
-                            autoComplete="billing street-address"
-                            required
                             value={formData.billingAddress}
-                            onChange={e => handleFieldChange("billingAddress", e.target.value)}
+                            onChange={(e) => handleFieldChange("billingAddress", e.target.value)}
+                            placeholder="456 Oak Avenue"
+                            required
                           />
                         </div>
-                        <div>
-                          <Label htmlFor="billingAddress2">Address Line 2 (Optional)</Label>
-                          <Input
-                            id="billingAddress2"
-                            name="billingAddress2"
-                            placeholder="Apartment, suite, etc."
-                            autoComplete="billing address-line2"
-                            value={formData.billingAddress2}
-                            onChange={e => handleFieldChange("billingAddress2", e.target.value)}
-                          />
-                        </div>
+                        
                         <div className="grid grid-cols-3 gap-4">
                           <div>
                             <Label htmlFor="billingCity">City</Label>
                             <Input
                               id="billingCity"
                               name="billingCity"
-                              placeholder="Boston"
-                              autoComplete="billing address-level2"
-                              required
                               value={formData.billingCity}
-                              onChange={e => handleFieldChange("billingCity", e.target.value)}
+                              onChange={(e) => handleFieldChange("billingCity", e.target.value)}
+                              placeholder="Boston"
+                              required
                             />
                           </div>
                           <div>
@@ -1070,11 +1137,10 @@ export default function CheckoutPayment() {
                             <Input
                               id="billingState"
                               name="billingState"
-                              placeholder="MA"
-                              autoComplete="billing address-level1"
-                              required
                               value={formData.billingState}
-                              onChange={e => handleFieldChange("billingState", e.target.value)}
+                              onChange={(e) => handleFieldChange("billingState", e.target.value)}
+                              placeholder="MA"
+                              required
                             />
                           </div>
                           <div>
@@ -1082,31 +1148,60 @@ export default function CheckoutPayment() {
                             <Input
                               id="billingZip"
                               name="billingZip"
-                              placeholder="02101"
-                              autoComplete="billing postal-code"
-                              required
                               value={formData.billingZip}
-                              onChange={e => handleFieldChange("billingZip", e.target.value)}
+                              onChange={(e) => handleFieldChange("billingZip", e.target.value)}
+                              placeholder="02101"
+                              required
                             />
                           </div>
                         </div>
+                        
                         <div>
-                          <Label htmlFor="billingPhone">Phone Number</Label>
-                          <Input
-                            id="billingPhone"
-                            name="billingPhone"
-                            type="tel"
-                            placeholder="+1 (555) 123-4567"
-                            autoComplete="billing tel"
-                            required
-                            value={formData.billingPhone}
-                            onChange={e => handleFieldChange("billingPhone", e.target.value)}
-                          />
+                          <Label htmlFor="billingCountry">Country</Label>
+                          <Select value={formData.billingCountry} onValueChange={value => handleFieldChange("billingCountry", value)}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select country" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {COUNTRIES.map(country => (
+                                <SelectItem key={country.code} value={country.code}>
+                                  {country.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
-                      </fieldset>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="billingPhone">Phone</Label>
+                            <Input
+                              id="billingPhone"
+                              name="billingPhone"
+                              type="tel"
+                              value={formData.billingPhone}
+                              onChange={(e) => handleFieldChange("billingPhone", e.target.value)}
+                              placeholder="+1 (555) 123-4567"
+                              required
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="billingEmail">Email</Label>
+                            <Input
+                              id="billingEmail"
+                              name="billingEmail"
+                              type="email"
+                              value={formData.billingEmail}
+                              onChange={(e) => handleFieldChange("billingEmail", e.target.value)}
+                              placeholder="john@example.com"
+                              required
+                            />
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   )}
-                </fieldset>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -1156,15 +1251,21 @@ export default function CheckoutPayment() {
                 <div className="space-y-3">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span className="font-medium">{formatCurrency(orderSummary.subtotal, currency, locale)}</span>
+                    <span className="font-medium">
+                      {formatCurrency(orderSummary.subtotal, currency, locale)}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Shipping</span>
-                    <span className="font-medium">{formatCurrency(orderSummary.shipping, currency, locale)}</span>
+                    <span className="font-medium">
+                      {formatCurrency(orderSummary.shipping, currency, locale)}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Tax</span>
-                    <span className="font-medium">{formatCurrency(orderSummary.tax, currency, locale)}</span>
+                    <span className="font-medium">
+                      {formatCurrency(orderSummary.tax, currency, locale)}
+                    </span>
                   </div>
                   <Separator className="my-4" />
                   <div className="flex justify-between text-lg font-semibold">
