@@ -333,28 +333,20 @@ export function useKlarna({
     []
   );
 
-  // Load SDK
   const loadSDK = useCallback(async () => {
     try {
-      setIsLoading(true)
-      setError(null)
+      setIsLoading(true);
+      setError(null);
 
-      const sdk = await manager.loadSDK(locale)
-      setKlarnaSDK(sdk)
-
-      // Get presentation
-      if (amount > 0) {
-        const presentation = await manager.getPresentation(amount, currency, locale)
-        setKlarnaPresentation(presentation)
-      }
+      const sdk = await manager.loadSDK(locale);
+      setKlarnaSDK(sdk);
     } catch (err) {
-      const error = err as Error
-      setError(error)
-      log("error", "SDK Load Error", error.message, error)
+      const error = err as Error;
+      setError(error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }, [amount, currency, locale, manager, log])
+  }, [locale, manager]);
 
   // Update presentation when amount/currency/locale changes
   const updatePresentation = useCallback(async () => {
