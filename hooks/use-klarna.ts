@@ -321,7 +321,6 @@ export function useKlarna({
 
   const manager = KlarnaSDKManager.getInstance()
 
-  // Memoized log function
   const log = useCallback(
     (
       type: "info" | "success" | "warning" | "error",
@@ -329,12 +328,10 @@ export function useKlarna({
       message: string,
       data?: any
     ) => {
-      if (onLog) {
-        onLog(type, title, message, data)
-      }
+      // No-op
     },
-    [onLog]
-  )
+    []
+  );
 
   // Load SDK
   const loadSDK = useCallback(async () => {
@@ -382,13 +379,16 @@ export function useKlarna({
     loadSDK()
   }, [loadSDK, log])
 
-  // Register logger with manager
   useEffect(() => {
-    manager.addLogger(log)
-    return () => {
-      manager.removeLogger(log)
+    if (onLog) {
+      manager.addLogger(onLog);
     }
-  }, [manager, log])
+    return () => {
+      if (onLog) {
+        manager.removeLogger(onLog);
+      }
+    };
+  }, [manager, onLog]);
 
   // Load SDK on mount
   useEffect(() => {
