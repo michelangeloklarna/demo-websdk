@@ -8,21 +8,21 @@ const nextConfig = {
     ignoreBuildErrors: false,
   },
   images: {
-    unoptimized: process.env.NODE_ENV === 'development',
-    domains: ['placeholder.com'],
+    unoptimized: process.env.NODE_ENV === "development",
+    domains: ["placeholder.com"],
   },
   experimental: {
     // typedRoutes: true, // Temporarily disabled for demo
-    optimizePackageImports: ['lucide-react', '@radix-ui/react-*'],
+    optimizePackageImports: ["lucide-react", "@radix-ui/react-*"],
   },
   // Security headers
   async headers() {
     return [
       {
-        source: '/(.*)',
+        source: "/(.*)",
         headers: [
           {
-            key: 'Content-Security-Policy',
+            key: "Content-Security-Policy",
             value: [
               "default-src 'self';",
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.klarna.com https://js.playground.klarna.com;",
@@ -31,19 +31,19 @@ const nextConfig = {
               "font-src 'self' data:;",
               "connect-src 'self' https://js.klarna.com https://na.playground.klarnaevt.com https://js.playground.klarna.com;",
               "frame-src https://js.klarna.com https://js.playground.klarna.com;",
-            ].join(' '),
+            ].join(" "),
           },
           {
-            key: 'X-Frame-Options',
-            value: 'DENY',
+            key: "X-Frame-Options",
+            value: "DENY",
           },
           {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
+            key: "X-Content-Type-Options",
+            value: "nosniff",
           },
         ],
       },
-    ];
+    ]
   },
 }
 

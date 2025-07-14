@@ -1,5 +1,14 @@
 import Link from "next/link"
-import { Smartphone, Facebook, Twitter, Instagram, Youtube, Mail, Phone, MapPin } from "lucide-react"
+import {
+  Smartphone,
+  Facebook,
+  Twitter,
+  Instagram,
+  Youtube,
+  Mail,
+  Phone,
+  MapPin,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
@@ -50,7 +59,8 @@ export default function Footer() {
               <span className="text-2xl font-bold">TechStore</span>
             </Link>
             <p className="text-muted-foreground leading-relaxed">
-              Your trusted destination for premium electronics, cutting-edge gadgets, and tech accessories.
+              Your trusted destination for premium electronics, cutting-edge gadgets, and tech
+              accessories.
             </p>
             <div className="flex gap-4" role="list" aria-label="Social media links">
               <Link

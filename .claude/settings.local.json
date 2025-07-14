@@ -1,0 +1,6 @@
+{
+  "permissions": {
+    "allow": ["Bash(pnpm install:*)", "Bash(pnpm build:*)", "Bash(grep:*)"],
+    "deny": []
+  }
+}

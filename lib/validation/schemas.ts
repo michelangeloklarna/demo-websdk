@@ -7,16 +7,31 @@ export const shippingAddressSchema = z.object({
   address2: z.string().max(100, "Address line 2 too long").optional(),
   city: z.string().min(1, "City is required").max(50, "City name too long"),
   state: z.string().min(1, "State is required").max(50, "State name too long"),
-  zip: z.string().min(1, "ZIP code is required").regex(/^\d{5}(-\d{4})?$/, "Invalid ZIP code"),
-  phone: z.string().min(1, "Phone number is required").regex(/^[+]?[1-9][\d\s\-\(\)]{7,15}$/, "Invalid phone number"),
+  zip: z
+    .string()
+    .min(1, "ZIP code is required")
+    .regex(/^\d{5}(-\d{4})?$/, "Invalid ZIP code"),
+  phone: z
+    .string()
+    .min(1, "Phone number is required")
+    .regex(/^[+]?[1-9][\d\s\-\(\)]{7,15}$/, "Invalid phone number"),
 })
 
 export const billingAddressSchema = shippingAddressSchema
 
 export const cardPaymentSchema = z.object({
-  cardNumber: z.string().min(1, "Card number is required").regex(/^\d{4}\s?\d{4}\s?\d{4}\s?\d{4}$/, "Invalid card number"),
-  expiry: z.string().min(1, "Expiry date is required").regex(/^(0[1-9]|1[0-2])\/\d{2}$/, "Invalid expiry date (MM/YY)"),
-  cvc: z.string().min(1, "CVC is required").regex(/^\d{3,4}$/, "Invalid CVC"),
+  cardNumber: z
+    .string()
+    .min(1, "Card number is required")
+    .regex(/^\d{4}\s?\d{4}\s?\d{4}\s?\d{4}$/, "Invalid card number"),
+  expiry: z
+    .string()
+    .min(1, "Expiry date is required")
+    .regex(/^(0[1-9]|1[0-2])\/\d{2}$/, "Invalid expiry date (MM/YY)"),
+  cvc: z
+    .string()
+    .min(1, "CVC is required")
+    .regex(/^\d{3,4}$/, "Invalid CVC"),
   cardName: z.string().min(1, "Name on card is required").max(100, "Name too long"),
 })
 

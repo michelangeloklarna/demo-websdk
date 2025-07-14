@@ -19,7 +19,9 @@ This is a demo ecommerce checkout application built with Next.js 15, React 19, a
 - `pnpm validate` - Run all quality checks (type-check + lint + format)
 
 ## Quality Gates
+
 Before making changes, always run:
+
 1. `pnpm validate` - Ensures type safety, linting, and formatting
 2. Check that build passes without errors
 3. Verify all components are properly error-bounded
@@ -27,6 +29,7 @@ Before making changes, always run:
 ## Architecture
 
 ### Core Structure
+
 - **Next.js App Router**: Uses the `app/` directory structure
 - **Main Entry Point**: `app/page.tsx` renders the checkout page
 - **Primary Component**: `components/checkout-payment.tsx` contains the full checkout flow
@@ -35,19 +38,23 @@ Before making changes, always run:
 - **Utilities**: `lib/utils.ts` includes order calculation and formatting functions
 
 ### UI Components
+
 - Built with **shadcn UI** components (extensive library in `components/ui/`)
 - **Tailwind CSS** for styling
 - **Radix UI** primitives for accessibility
 - **Lucide React** for icons
 
 ### Payment Methods
+
 The checkout supports four payment methods defined in `lib/constants.ts:30`:
+
 - Credit/Debit Card (with form fields)
 - PayPal
 - Klarna (with payment breakdown visualization)
 - Bank Transfer
 
 ### Key Features
+
 - Responsive design with mobile-first approach
 - Form validation with Zod schemas
 - Error boundaries for graceful error handling
@@ -60,6 +67,7 @@ The checkout supports four payment methods defined in `lib/constants.ts:30`:
 ## Development Guidelines
 
 ### Code Quality Standards
+
 - Always run `pnpm validate` before committing
 - Use TypeScript strictly - no `any` types
 - Implement proper error boundaries
@@ -67,6 +75,7 @@ The checkout supports four payment methods defined in `lib/constants.ts:30`:
 - Follow ESLint and Prettier configurations
 
 ### Component Architecture
+
 - Use custom hooks for complex logic (e.g., `useKlarna`)
 - Keep components focused and composable
 - Always use shadcn UI components from `components/ui/`
@@ -74,43 +83,53 @@ The checkout supports four payment methods defined in `lib/constants.ts:30`:
 - Use absolute imports with `@/` prefix
 
 ### Error Handling
+
 - Wrap components in ErrorBoundary where appropriate
 - Implement proper async error handling
 - Provide meaningful error messages to users
 - Log errors with context for debugging
 
 ### Payment Integration Focus
+
 All features should align with demonstrating payment method integrations in an ecommerce context. This is a demo application specifically for showcasing payment flows.
 
 ### Security and Performance
+
 - Never expose sensitive data in client-side code
 - Use proper environment variables
 - Implement CSP headers for security
 - Optimize for performance with proper loading states
 
 ### Deployment
+
 The project is configured for Vercel deployment with GitHub integration for continuous deployment. Local development uses company registry, while Vercel uses public npm registry via `.vercelignore`.
 
 ## Klarna SDK Configuration
 
 ### Environment Variables
+
 Set these in your `.env.local` file:
+
 ```
 NEXT_PUBLIC_KLARNA_CLIENT_ID=your_klarna_client_id
 NEXT_PUBLIC_KLARNA_PARTNER_ACCOUNT_ID=your_partner_account_id
 ```
 
 ### Getting Klarna Credentials
+
 1. **Sign up for Klarna Developer Account**: Visit [Klarna Developer Portal](https://docs.klarna.com/)
 2. **Create a Playground Application**: Follow the setup guide for web SDK
 3. **Get Your Credentials**: Copy your Client ID and Partner Account ID
 4. **Update Environment Variables**: Add them to your `.env.local` file
 
 ### Demo Mode
+
 If valid credentials are not provided, the application will automatically switch to demo mode with mock data. This allows you to test the integration flow without real Klarna credentials.
 
 ### Debug Console
+
 The application includes a comprehensive debug console that shows:
+
 - SDK loading progress
 - Configuration details
 - Error messages with suggested fixes

@@ -109,7 +109,12 @@ export default function Header({ cartItemCount = 3 }: HeaderProps) {
             aria-label="Mobile navigation"
           >
             <div className="flex flex-col gap-4">
-              <Button variant="outline" size="sm" className="justify-start gap-2 py-2.5 bg-transparent" asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="justify-start gap-2 py-2.5 bg-transparent"
+                asChild
+              >
                 <Link href="/account">
                   <User className="h-4 w-4" aria-hidden="true" />
                   My Account

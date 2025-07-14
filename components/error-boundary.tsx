@@ -30,13 +30,13 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error("Error caught by boundary:", error, errorInfo)
-    
+    // Error caught by boundary
+
     // Log to external service in production
     if (process.env.NODE_ENV === "production") {
       // Example: logErrorToService(error, errorInfo)
     }
-    
+
     this.setState({
       errorInfo: errorInfo.componentStack || undefined,
     })

@@ -1,9 +1,10 @@
 "use client"
 
-import type React from "react"
+import React from "react"
 
 import { useState, useMemo, useEffect, useRef, useCallback } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -19,249 +20,569 @@ import { useKlarna } from "@/hooks/use-klarna"
 import { useKlarnaLogger } from "@/hooks/use-klarna-logger"
 import { KlarnaDebugAlert } from "@/components/klarna-debug-alert"
 
+// Generic Klarna Component Wrapper - handles mounting any Klarna presentation component
+const KlarnaComponent = ({
+  paymentPresentation,
+  componentPath,
+  containerId,
+  componentName,
+  className = "min-h-[20px]",
+  onLog,
+}: {
+  paymentPresentation: any
+  componentPath: string // e.g., "icon.component", "header.component", "subheader.enriched.component"
+  containerId: string
+  componentName: string
+  className?: string
+  onLog?: (
+    type: "info" | "success" | "warning" | "error",
+    title: string,
+    message: string,
+    data?: any
+  ) => void
+}) => {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const componentRef = useRef<any>(null)
+  const mountAttempted = useRef(false)
+
+  // Helper to get nested component from path
+  const getComponent = (obj: any, path: string) => {
+    return path.split(".").reduce((current, key) => current?.[key], obj)
+  }
+
+  // Stable logging function that doesn't cause re-renders
+  const logInfo = useCallback(
+    (
+      type: "info" | "success" | "warning" | "error",
+      title: string,
+      message: string,
+      data?: any
+    ) => {
+      console.log(`[${componentName}] ${title}: ${message}`, data || "")
+      onLog?.(type, title, message, data)
+    },
+    [componentName, onLog]
+  )
+
+  // Removed visibility observer - all components now mount when SDK is ready
+
+  // Consolidated mounting effect - handles SDK readiness
+  useEffect(() => {
+    // Reset mount attempt flag when dependencies change
+    mountAttempted.current = false
+
+    // All components now mount when SDK is ready (no special visibility logic)
+
+    if (!paymentPresentation) {
+      logInfo("info", `${componentName} Mount Skipped`, "Payment presentation not available")
+      return
+    }
+
+    if (!containerRef.current) {
+      logInfo("info", `${componentName} Mount Skipped`, "Container ref not available")
+      return
+    }
+
+    if (mountAttempted.current) {
+      logInfo("info", `${componentName} Mount Skipped`, "Mount already attempted")
+      return
+    }
+
+    const component = getComponent(paymentPresentation, componentPath)
+    if (!component) {
+      logInfo("warning", `${componentName} Mount`, "Component not available in presentation")
+      return
+    }
+
+    // Clean up existing component first
+    if (componentRef.current) {
+      try {
+        componentRef.current.unmount()
+        componentRef.current = null
+      } catch (error) {
+        console.log(`❌ [${componentName}] Error unmounting:`, error)
+      }
+    }
+
+    // Mount component
+    logInfo("info", `${componentName} Mount`, "Attempting to mount component")
+
+    try {
+      mountAttempted.current = true
+
+      // Clear container first
+      containerRef.current.innerHTML = ""
+
+      // Create and mount component
+      const componentInstance = component()
+      logInfo("info", `${componentName} Created`, "Component instance created")
+
+      if (componentInstance.mount) {
+        componentInstance.mount(`#${containerId}`)
+        logInfo("success", `${componentName} Mounted`, "Mounted via mount method")
+      } else if (componentInstance.htmlElement) {
+        containerRef.current.appendChild(componentInstance.htmlElement)
+        logInfo("success", `${componentName} Mounted`, "Mounted via htmlElement")
+
+        // Create compatible unmount method
+        const originalUnmount = componentInstance.unmount
+        componentInstance.unmount = () => {
+          try {
+            if (componentInstance.htmlElement?.parentNode) {
+              componentInstance.htmlElement.parentNode.removeChild(componentInstance.htmlElement)
+            }
+            originalUnmount?.call(componentInstance)
+          } catch (error) {
+            console.log(`❌ [${componentName}] Error in custom unmount:`, error)
+          }
+        }
+      } else {
+        throw new Error(`Component has neither mount method nor htmlElement property`)
+      }
+
+      componentRef.current = componentInstance
+    } catch (error) {
+      mountAttempted.current = false
+      logInfo("error", `${componentName} Error`, "Failed to mount component", error)
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (componentRef.current) {
+        try {
+          componentRef.current.unmount()
+          componentRef.current = null
+        } catch (error) {
+          console.log(`❌ [${componentName}] Error during cleanup:`, error)
+        }
+      }
+    }
+  }, [componentName, componentPath, containerId, paymentPresentation, logInfo])
+
+  return <div id={containerId} ref={containerRef} className={className} />
+}
+
+// Specific component wrappers for better type safety and consistency
+const KlarnaIcon = React.memo(
+  (props: {
+    paymentPresentation: any
+    onLog?: (
+      type: "info" | "success" | "warning" | "error",
+      title: string,
+      message: string,
+      data?: any
+    ) => void
+  }) => (
+    <KlarnaComponent
+      paymentPresentation={props.paymentPresentation}
+      componentPath="icon.component"
+      containerId="klarna-icon-container"
+      componentName="Icon"
+      className="max-w-9 max-h-9 w-auto h-auto flex items-center justify-center [&>*]:max-w-full [&>*]:max-h-full [&>*]:w-auto [&>*]:h-auto [&>*]:object-contain"
+      onLog={props.onLog}
+    />
+  )
+)
+
+const KlarnaHeader = React.memo(
+  (props: {
+    paymentPresentation: any
+    onLog?: (
+      type: "info" | "success" | "warning" | "error",
+      title: string,
+      message: string,
+      data?: any
+    ) => void
+  }) => (
+    <KlarnaComponent
+      paymentPresentation={props.paymentPresentation}
+      componentPath="header.component"
+      containerId="klarna-header-container"
+      componentName="Header"
+      className="flex items-center text-sm font-medium leading-tight"
+      onLog={props.onLog}
+    />
+  )
+)
+
+const KlarnaShortSubheader = React.memo(
+  (props: {
+    paymentPresentation: any
+    onLog?: (
+      type: "info" | "success" | "warning" | "error",
+      title: string,
+      message: string,
+      data?: any
+    ) => void
+  }) => (
+    <KlarnaComponent
+      paymentPresentation={props.paymentPresentation}
+      componentPath="subheader.short.component"
+      containerId="klarna-short-subheader-container"
+      componentName="Short Subheader"
+      className="flex items-center text-xs text-muted-foreground leading-tight mt-0.5"
+      onLog={props.onLog}
+    />
+  )
+)
+
+const KlarnaEnrichedSubheader = React.memo(
+  (props: {
+    paymentPresentation: any
+    onLog?: (
+      type: "info" | "success" | "warning" | "error",
+      title: string,
+      message: string,
+      data?: any
+    ) => void
+  }) => (
+    <KlarnaComponent
+      paymentPresentation={props.paymentPresentation}
+      componentPath="subheader.enriched.component"
+      containerId="klarna-enriched-subheader-container"
+      componentName="Enriched Subheader"
+      className="min-h-[40px]"
+      onLog={props.onLog}
+    />
+  )
+)
+
+// KlarnaEnrichedSubheader wrapper component now exists for consistency
+
+interface FormData {
+  firstName: string
+  lastName: string
+  address: string
+  address2: string
+  city: string
+  state: string
+  zip: string
+  phone: string
+  billingFirstName: string
+  billingLastName: string
+  billingAddress: string
+  billingAddress2: string
+  billingCity: string
+  billingState: string
+  billingZip: string
+  billingPhone: string
+}
+
 export default function CheckoutPayment() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentData["method"]>(PAYMENT_METHODS.CARD)
   const [differentBilling, setDifferentBilling] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [mountingStatus, setMountingStatus] = useState({
-    selectionMounted: false,
-    detailedMounted: false,
-    shortSubheaderSelectionMounted: false,
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [formData, setFormData] = useState<FormData>({
+    firstName: "Test",
+    lastName: "Person-us",
+    address: "509 Amsterdam Ave",
+    address2: "",
+    city: "New York",
+    state: "NY",
+    zip: "10024-3941",
+    phone: "+13106683312",
+    billingFirstName: "",
+    billingLastName: "",
+    billingAddress: "",
+    billingAddress2: "",
+    billingCity: "",
+    billingState: "",
+    billingZip: "",
+    billingPhone: "",
   })
 
   const orderSummary = useMemo(() => calculateOrderSummary(MOCK_CART_ITEMS), [])
-  
-  // Memoize expensive calculations
-  const cartItems = useMemo(() => MOCK_CART_ITEMS, [])
+
+  // Cart items are constant, no need to memoize
+  const cartItems = MOCK_CART_ITEMS
   const submitButtonText = useMemo(() => {
-    if (isSubmitting) return "Processing..."
-    if (paymentMethod === PAYMENT_METHODS.KLARNA) return "Continue with Klarna"
+    if (isSubmitting) {
+      return "Processing..."
+    }
+    if (paymentMethod === PAYMENT_METHODS.KLARNA) {
+      return "Continue with Klarna"
+    }
     return "Complete Order"
   }, [isSubmitting, paymentMethod])
 
-  // Refs for Klarna presentation components
-  const klarnaHeaderSelectionRef = useRef<{ unmount: () => void } | null>(null)
-  const klarnaIconSelectionRef = useRef<{ unmount: () => void } | null>(null)
-  const klarnaSubheaderSelectionRef = useRef<{ unmount: () => void } | null>(null)
-  const klarnaEnrichedSubheaderRef = useRef<{ unmount: () => void } | null>(null)
+  // Form validation functions - only shipping address is mandatory (excluding address2)
+  const isShippingAddressValid = useMemo(() => {
+    const requiredFields: (keyof FormData)[] = [
+      "firstName",
+      "lastName",
+      "address",
+      "city",
+      "state",
+      "zip",
+      "phone",
+    ]
+    return requiredFields.every(field => formData[field]?.trim() !== "")
+  }, [formData])
+
+  const isFormValid = useMemo(() => {
+    return isShippingAddressValid
+  }, [isShippingAddressValid])
+
+  // Handle form field changes
+  const handleFieldChange = useCallback((field: keyof FormData, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value,
+    }))
+  }, [])
+
+  // Refs for Klarna payment button (still uses old pattern)
+  const klarnaButtonContainerRef = useRef<HTMLDivElement>(null)
+  const klarnaButtonRef = useRef<any>(null)
 
   // Initialize Klarna logging
   const { logs, addLog, clearLogs } = useKlarnaLogger()
 
   // Load Klarna WebSDK with logging
-  const { klarnaPresentation, isLoading: klarnaLoading, error: klarnaError, retry } = useKlarna({
+  const { klarnaPresentation, isLoading: klarnaLoading } = useKlarna({
     amount: orderSummary.total,
     currency: "USD",
     locale: "en-US",
-    onLog: addLog
+    onLog: addLog,
   })
 
-  // Memoize mounting functions for better performance
-  const mountKlarnaComponents = useCallback(() => {
-    if (!klarnaPresentation) return
-    
-    // Mount header in selection area (always visible)
-    if (klarnaPresentation.header && klarnaPresentation.header.component) {
-      try {
-        const container = document.querySelector("#klarna-header-container-selection")
-        if (!container) {
-          addLog("warning", "Header Mount Warning (Selection)", "Container element not found: #klarna-header-container-selection")
-          return
-        }
-        
-        const headerComponent = klarnaPresentation.header.component()
-        if (headerComponent && headerComponent.mount) {
-          klarnaHeaderSelectionRef.current = headerComponent.mount("#klarna-header-container-selection")
-          addLog("success", "Header Mounted (Selection)", "Klarna header component mounted in selection area")
-          setMountingStatus(prev => ({ ...prev, selectionMounted: true }))
-        }
-      } catch (error) {
-        addLog("error", "Header Mount Error (Selection)", "Failed to mount Klarna header component in selection area", error)
-      }
-    }
+  // Note: All Klarna component mounting is now handled by individual wrapper components:
+  // KlarnaIcon, KlarnaHeader, KlarnaShortSubheader, and KlarnaEnrichedSubheader
 
-    // Mount short subheader in selection area (always visible)
-    if (klarnaPresentation.subheader) {
-      addLog("info", "Subheader Debug", "Subheader object structure", klarnaPresentation.subheader)
-      
-      const subheaderContainer = document.querySelector("#klarna-subheader-container-selection")
-      if (!subheaderContainer) {
-        addLog("warning", "Subheader Mount Warning (Selection)", "Container element not found: #klarna-subheader-container-selection")
-        return
-      }
-      
-      // Try different possible structures
-      let subheaderComponent = null
-      
-      // Check if subheader has direct component method
-      if (klarnaPresentation.subheader.component) {
-        subheaderComponent = klarnaPresentation.subheader.component()
-        addLog("info", "Subheader Found", "Direct component method available")
-      }
-      // Check if subheader.short has component method
-      else if (klarnaPresentation.subheader.short && klarnaPresentation.subheader.short.component) {
-        subheaderComponent = klarnaPresentation.subheader.short.component()
-        addLog("info", "Subheader Found", "Short component method available")
-      }
-      // Check if subheader.enriched has component method
-      else if (klarnaPresentation.subheader.enriched && klarnaPresentation.subheader.enriched.component) {
-        subheaderComponent = klarnaPresentation.subheader.enriched.component()
-        addLog("info", "Subheader Found", "Enriched component method available")
-      }
-      else {
-        addLog("warning", "Subheader Structure", "No component method found", klarnaPresentation.subheader)
-      }
-      
-      if (subheaderComponent && subheaderComponent.mount) {
-        try {
-          klarnaSubheaderSelectionRef.current = subheaderComponent.mount("#klarna-subheader-container-selection")
-          addLog("success", "Subheader Mounted (Selection)", "Klarna subheader component mounted in selection area")
-          setMountingStatus(prev => ({ ...prev, shortSubheaderSelectionMounted: true }))
-        } catch (error) {
-          addLog("error", "Subheader Mount Error (Selection)", "Failed to mount Klarna subheader component in selection area", error)
+  // Memoize the button configuration to prevent unnecessary remounts
+  const buttonConfig = useMemo(
+    () => ({
+      // Button appearance configuration
+      shape: "default" as const,
+      theme: "default" as const,
+      locale: "en-US",
+
+      // Button identification
+      id: "klarna-payment-button",
+
+      // Payment flow configuration
+      initiationMode: "DEVICE_BEST" as const,
+
+      // Payment initiation function
+      initiate: () => {
+        addLog("info", "Payment Button Initiated", "INITIATE function triggered")
+
+        // Simple form data collection without validation
+        const form = document.querySelector("form") as HTMLFormElement
+        const formDataObj = new FormData(form)
+
+        // Extract shipping address from form
+        const shippingAddress = {
+          firstName: formDataObj.get("firstName") as string,
+          lastName: formDataObj.get("lastName") as string,
+          address: formDataObj.get("address") as string,
+          address2: formDataObj.get("address2") as string,
+          city: formDataObj.get("city") as string,
+          state: formDataObj.get("state") as string,
+          zip: formDataObj.get("zip") as string,
+          phone: formDataObj.get("phone") as string,
+          email: "customer@email.us", // Test email address
         }
-      }
-    }
 
-    // Mount icon in selection area (always visible)
-    if (klarnaPresentation.icon && klarnaPresentation.icon.component) {
-      try {
-        const container = document.querySelector("#klarna-icon-container-selection")
-        if (!container) {
-          addLog("warning", "Icon Mount Warning (Selection)", "Container element not found: #klarna-icon-container-selection")
-          return
-        }
-        
-        const iconComponent = klarnaPresentation.icon.component()
-        if (iconComponent && iconComponent.mount) {
-          klarnaIconSelectionRef.current = iconComponent.mount("#klarna-icon-container-selection")
-          addLog("success", "Icon Mounted (Selection)", "Klarna icon component mounted in selection area")
-        }
-      } catch (error) {
-        addLog("error", "Icon Mount Error (Selection)", "Failed to mount Klarna icon component in selection area", error)
-      }
-    }
-  }, [klarnaPresentation, addLog])
+        // Read current billing checkbox state
+        const isDifferentBilling =
+          (document.querySelector("#differentBilling") as HTMLInputElement)?.checked || false
 
-  const mountKlarnaDetailedComponents = useCallback(() => {
-    if (!klarnaPresentation || paymentMethod !== PAYMENT_METHODS.KLARNA) return
-    
-    // Only mount enriched subheader in detailed area (only when Klarna is selected)
-    if (klarnaPresentation.subheader && klarnaPresentation.subheader.enriched && klarnaPresentation.subheader.enriched.component) {
-      try {
-        const container = document.querySelector("#klarna-enriched-subheader-container")
-        if (!container) {
-          addLog("warning", "Enriched Subheader Mount Warning", "Container element not found: #klarna-enriched-subheader-container")
-          return
-        }
-        
-        const enrichedSubheaderComponent = klarnaPresentation.subheader.enriched.component()
-        if (enrichedSubheaderComponent && enrichedSubheaderComponent.mount) {
-          klarnaEnrichedSubheaderRef.current = enrichedSubheaderComponent.mount("#klarna-enriched-subheader-container")
-          addLog("success", "Enriched Subheader Mounted", "Klarna enriched subheader component mounted in detailed area")
-          setMountingStatus(prev => ({ ...prev, detailedMounted: true }))
-        }
-      } catch (error) {
-        addLog("error", "Enriched Subheader Mount Error", "Failed to mount Klarna enriched subheader component", error)
-      }
-    }
-  }, [klarnaPresentation, paymentMethod, addLog])
+        // Extract billing address if different from shipping
+        const billingAddress = isDifferentBilling
+          ? {
+              firstName: formDataObj.get("billingFirstName") as string,
+              lastName: formDataObj.get("billingLastName") as string,
+              address: formDataObj.get("billingAddress") as string,
+              address2: formDataObj.get("billingAddress2") as string,
+              city: formDataObj.get("billingCity") as string,
+              state: formDataObj.get("billingState") as string,
+              zip: formDataObj.get("billingZip") as string,
+              phone: formDataObj.get("billingPhone") as string,
+              email: shippingAddress.email, // Use same email as shipping
+            }
+          : shippingAddress
 
-  const unmountKlarnaComponents = useCallback(() => {
-    // Cleanup selection area components
-    if (klarnaHeaderSelectionRef.current) {
-      try {
-        klarnaHeaderSelectionRef.current.unmount()
-        addLog("info", "Header Unmounted (Selection)", "Klarna header component unmounted from selection area")
-      } catch (error) {
-        addLog("error", "Header Unmount Error (Selection)", "Failed to unmount Klarna header component from selection area", error)
-      }
-      klarnaHeaderSelectionRef.current = null
-      setMountingStatus(prev => ({ ...prev, selectionMounted: false }))
-    }
-    
-    if (klarnaSubheaderSelectionRef.current) {
-      try {
-        klarnaSubheaderSelectionRef.current.unmount()
-        addLog("info", "Subheader Unmounted (Selection)", "Klarna subheader component unmounted from selection area")
-      } catch (error) {
-        addLog("error", "Subheader Unmount Error (Selection)", "Failed to unmount Klarna subheader component from selection area", error)
-      }
-      klarnaSubheaderSelectionRef.current = null
-      setMountingStatus(prev => ({ ...prev, shortSubheaderSelectionMounted: false }))
-    }
-    
-    if (klarnaIconSelectionRef.current) {
-      try {
-        klarnaIconSelectionRef.current.unmount()
-        addLog("info", "Icon Unmounted (Selection)", "Klarna icon component unmounted from selection area")
-      } catch (error) {
-        addLog("error", "Icon Unmount Error (Selection)", "Failed to unmount Klarna icon component from selection area", error)
-      }
-      klarnaIconSelectionRef.current = null
-    }
-
-    // Cleanup detailed area components - only enriched subheader
-    if (klarnaEnrichedSubheaderRef.current) {
-      try {
-        klarnaEnrichedSubheaderRef.current.unmount()
-        addLog("info", "Enriched Subheader Unmounted", "Klarna enriched subheader component unmounted from detailed area")
-      } catch (error) {
-        addLog("error", "Enriched Subheader Unmount Error", "Failed to unmount Klarna enriched subheader component", error)
-      }
-      klarnaEnrichedSubheaderRef.current = null
-      setMountingStatus(prev => ({ ...prev, detailedMounted: false }))
-    }
-  }, [addLog])
-
-  // Mount/unmount Klarna header and icon when presentation is available
-  useEffect(() => {
-    if (!klarnaPresentation) return
-    
-    // Use requestAnimationFrame to ensure DOM is ready
-    const timeoutId = setTimeout(() => {
-      requestAnimationFrame(() => {
-        mountKlarnaComponents()
-      })
-    }, 100) // Small delay to ensure DOM elements are rendered
-    
-    return () => {
-      clearTimeout(timeoutId)
-      unmountKlarnaComponents()
-    }
-  }, [klarnaPresentation, mountKlarnaComponents, unmountKlarnaComponents])
-
-  // Mount detailed components when Klarna is selected
-  useEffect(() => {
-    if (paymentMethod === PAYMENT_METHODS.KLARNA && klarnaPresentation) {
-      // Use requestAnimationFrame to ensure DOM is ready
-      const timeoutId = setTimeout(() => {
-        requestAnimationFrame(() => {
-          mountKlarnaDetailedComponents()
+        addLog("info", "Collected Form Data", "Shipping and billing addresses collected", {
+          shippingAddress,
+          billingAddress,
         })
-      }, 100) // Small delay to ensure DOM elements are rendered
-      
-      return () => clearTimeout(timeoutId)
-    } else {
-      // Reset detailed mounting status when Klarna is not selected
-      setMountingStatus(prev => ({ 
-        ...prev, 
-        detailedMounted: false
-      }))
+
+        // Call internal API endpoint which will call Klarna API
+        const requestPayload = {
+          currency: "USD",
+          orderSummary: orderSummary,
+          cartItems: cartItems,
+          shippingAddress: shippingAddress,
+          billingAddress: billingAddress,
+        }
+        const requestBody = JSON.stringify(requestPayload)
+        const requestStartTime = performance.now()
+
+        addLog("info", "API Request", "Sending payment authorization request", {
+          url: "/api/klarna-authorize",
+          method: "POST",
+          requestSize: new Blob([requestBody]).size,
+          payload: requestPayload,
+        })
+
+        return fetch("/api/klarna-authorize", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: requestBody,
+        })
+          .then(response => {
+            const responseTime = Math.round(performance.now() - requestStartTime)
+
+            addLog("info", "API Response", "API response received", {
+              status: response.status,
+              statusText: response.statusText,
+              responseTime: responseTime,
+              headers: Object.fromEntries(response.headers.entries()),
+            })
+
+            return response.json()
+          })
+          .then(data => {
+            const responseTime = Math.round(performance.now() - requestStartTime)
+
+            addLog("info", "Backend Response", "Backend response parsed", {
+              ...data,
+              responseTime: responseTime,
+              responseSize: new Blob([JSON.stringify(data)]).size,
+              result: data?.payment_transaction_response?.result,
+              paymentRequestId: data?.payment_request?.payment_request_id,
+            })
+
+            // Handle Step Up Required
+            if (
+              data?.payment_transaction_response?.result === "STEP_UP_REQUIRED" &&
+              data?.payment_request?.payment_request_id
+            ) {
+              addLog("info", "Step Up Required", "Additional authentication required", {
+                paymentRequestId: data.payment_request.payment_request_id,
+              })
+              return { paymentRequestId: data.payment_request.payment_request_id }
+            }
+
+            // Handle Approved
+            if (data?.payment_transaction_response?.result === "APPROVED") {
+              addLog("success", "Payment Approved", "Payment approved, redirecting")
+              window.location.href = "/confirmation"
+              return {}
+            }
+
+            // Handle Declined
+            if (data?.payment_transaction_response?.result === "DECLINED") {
+              addLog("warning", "Payment Declined", "Payment declined, redirecting")
+              window.location.href = "/failure"
+              return {}
+            }
+
+            // Handle unexpected response
+            addLog("error", "Unexpected Response", "Unexpected result", data)
+            throw new Error("Unexpected payment result")
+          })
+          .catch(error => {
+            addLog("error", "Payment Error", "Error in payment process", error)
+            throw error
+          })
+      },
+    }),
+    [orderSummary, cartItems, addLog]
+  )
+
+  // Effect to handle Klarna payment button mounting/unmounting
+  useEffect(() => {
+    // Only mount Klarna button when:
+    // 1. Klarna is selected
+    // 2. Payment presentation is available
+    // 3. Container ref is available
+    if (
+      paymentMethod === PAYMENT_METHODS.KLARNA &&
+      klarnaPresentation?.paymentButton &&
+      klarnaButtonContainerRef.current
+    ) {
+      // Clean up previous button
+      if (klarnaButtonRef.current) {
+        try {
+          addLog("info", "Payment Button Unmounted", "Unmounting previous payment button")
+          klarnaButtonRef.current.unmount()
+        } catch (error) {
+          addLog("error", "Payment Button Unmount Error", "Error unmounting previous button", error)
+        }
+        klarnaButtonRef.current = null
+      }
+
+      try {
+        addLog("info", "Payment Button Mounting", "Mounting payment button", {
+          currency: "USD",
+          amount: orderSummary.total,
+          locale: "en-US",
+        })
+
+        // Clear container before mounting
+        if (klarnaButtonContainerRef.current) {
+          klarnaButtonContainerRef.current.innerHTML = ""
+        }
+
+        // Create and mount the button
+        const presentationPaymentButton = klarnaPresentation.paymentButton
+          .component(buttonConfig)
+          .mount(klarnaButtonContainerRef.current)
+
+        // Store reference for cleanup
+        klarnaButtonRef.current = presentationPaymentButton
+        addLog("success", "Payment Button Mounted", "Payment button mounted successfully")
+      } catch (error) {
+        addLog("error", "Payment Button Mount Error", "Error mounting payment button", error)
+      }
     }
-  }, [paymentMethod, klarnaPresentation, mountKlarnaDetailedComponents])
+
+    // Cleanup function
+    return () => {
+      if (klarnaButtonRef.current) {
+        try {
+          addLog("info", "Payment Button Cleanup", "Unmounting payment button on cleanup")
+          klarnaButtonRef.current.unmount()
+        } catch (error) {
+          addLog(
+            "error",
+            "Payment Button Cleanup Error",
+            "Error unmounting payment button during cleanup",
+            error
+          )
+        }
+        klarnaButtonRef.current = null
+      }
+    }
+  }, [paymentMethod, klarnaPresentation, orderSummary.total, addLog, buttonConfig])
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setIsSubmitting(true)
+    setSubmitError(null)
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-      // Handle successful submission
-      console.log("Order submitted successfully")
+      // Only handle non-Klarna payments here
+      if (paymentMethod !== PAYMENT_METHODS.KLARNA) {
+        // Validate form data
+        if (!isFormValid) {
+          throw new Error("Please fill in all required fields")
+        }
+
+        // Simulate API call for other payment methods
+        await new Promise(resolve => setTimeout(resolve, 2000))
+
+        // Handle successful submission
+        addLog("success", "Order Submitted", "Order submitted successfully")
+        // Redirect to success page or show success message
+      }
     } catch (error) {
-      console.error("Order submission failed:", error)
+      const errorMessage = error instanceof Error ? error.message : "An error occurred"
+      setSubmitError(errorMessage)
+      addLog("error", "Order Submission Error", errorMessage)
     } finally {
       setIsSubmitting(false)
     }
@@ -272,7 +593,10 @@ export default function CheckoutPayment() {
   return (
     <div className="max-w-6xl mx-auto">
       <div className="mb-12">
-        <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-6" aria-label="Breadcrumb">
+        <nav
+          className="flex items-center gap-2 text-sm text-muted-foreground mb-6"
+          aria-label="Breadcrumb"
+        >
           <Link
             href="/"
             className="hover:text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-ring rounded px-1"
@@ -304,11 +628,12 @@ export default function CheckoutPayment() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <div className="w-9 h-9 flex items-center justify-center">
-                    <img 
-                      src="https://checkoutshopper-live.adyen.com/checkoutshopper/images/logos/medium/card.png" 
-                      alt="Payment Methods" 
-                      className="max-w-9 max-h-9 w-auto h-auto object-contain"
-                      loading="lazy"
+                    <Image
+                      src="https://checkoutshopper-live.adyen.com/checkoutshopper/images/logos/medium/card.png"
+                      alt="Payment Methods"
+                      width={36}
+                      height={36}
+                      className="object-contain"
                     />
                   </div>
                   Payment Method
@@ -317,23 +642,26 @@ export default function CheckoutPayment() {
               <CardContent>
                 <RadioGroup
                   value={paymentMethod}
-                  onValueChange={(value) => setPaymentMethod(value as PaymentData["method"])}
+                  onValueChange={value => setPaymentMethod(value as PaymentData["method"])}
                   aria-label="Select payment method"
                 >
                   <div className="flex items-center space-x-3 p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors min-h-[64px]">
                     <RadioGroupItem value={PAYMENT_METHODS.CARD} id="card" />
                     <Label htmlFor="card" className="flex items-center gap-3 cursor-pointer flex-1">
                       <div className="w-9 h-9 flex items-center justify-center flex-shrink-0">
-                        <img 
-                          src="https://checkoutshopper-live.adyen.com/checkoutshopper/images/logos/medium/card.png" 
-                          alt="Credit or Debit Card" 
-                          className="max-w-9 max-h-9 w-auto h-auto object-contain"
-                          loading="lazy"
+                        <Image
+                          src="https://checkoutshopper-live.adyen.com/checkoutshopper/images/logos/medium/card.png"
+                          alt="Credit or Debit Card"
+                          width={36}
+                          height={36}
+                          className="object-contain"
                         />
                       </div>
                       <div className="flex flex-col">
                         <span className="font-medium">Credit or Debit Card</span>
-                        <span className="text-sm text-muted-foreground">Visa, Mastercard, American Express</span>
+                        <span className="text-sm text-muted-foreground">
+                          Visa, Mastercard, American Express
+                        </span>
                       </div>
                     </Label>
                   </div>
@@ -342,71 +670,79 @@ export default function CheckoutPayment() {
                     {/* Klarna selector row */}
                     <div className="flex items-center space-x-3 p-4">
                       <RadioGroupItem value={PAYMENT_METHODS.KLARNA} id="klarna" />
-                      <Label htmlFor="klarna" className="flex items-center gap-3 cursor-pointer flex-1">
+                      <Label
+                        htmlFor="klarna"
+                        className="flex items-center gap-3 cursor-pointer flex-1"
+                      >
                         <div className="w-9 h-9 flex items-center justify-center flex-shrink-0">
-                          <div id="klarna-icon-container-selection" className="max-w-9 max-h-9 w-auto h-auto flex items-center justify-center [&>*]:max-w-full [&>*]:max-h-full [&>*]:w-auto [&>*]:h-auto [&>*]:object-contain">
-                            {/* Klarna icon will be mounted here */}
-                            {klarnaLoading && <Skeleton className="w-9 h-9" />}
-                            {!klarnaLoading && !klarnaPresentation && <div className="w-9 h-9 bg-muted/50 rounded-sm" />}
-                          </div>
+                          {klarnaLoading && <Skeleton className="w-9 h-9 rounded" />}
+                          {!klarnaLoading && klarnaPresentation && (
+                            <KlarnaIcon paymentPresentation={klarnaPresentation} onLog={addLog} />
+                          )}
+                          {!klarnaLoading && !klarnaPresentation && (
+                            <div className="w-9 h-9 bg-muted/50 rounded-sm" />
+                          )}
                         </div>
                         <div className="flex flex-col flex-1 min-w-0">
-                          <div id="klarna-header-container-selection" className="flex items-center text-sm font-medium leading-tight">
-                            {/* Klarna header will be mounted here */}
+                          <div className="flex items-center text-sm font-medium leading-tight">
                             {klarnaLoading && <Skeleton className="h-4 w-20" />}
+                            {!klarnaLoading && klarnaPresentation && (
+                              <KlarnaHeader
+                                paymentPresentation={klarnaPresentation}
+                                onLog={addLog}
+                              />
+                            )}
                           </div>
-                          <div id="klarna-subheader-container-selection" className="flex items-center text-xs text-muted-foreground leading-tight mt-0.5">
-                            {/* Klarna subheader will be mounted here */}
+                          <div className="flex items-center text-xs text-muted-foreground leading-tight mt-0.5">
                             {klarnaLoading && <Skeleton className="h-3 w-24" />}
+                            {!klarnaLoading && klarnaPresentation && (
+                              <KlarnaShortSubheader
+                                paymentPresentation={klarnaPresentation}
+                                onLog={addLog}
+                              />
+                            )}
                           </div>
                         </div>
                       </Label>
                     </div>
-                    {/* Klarna expanded details below selector row, inside the same box */}
-                    {paymentMethod === PAYMENT_METHODS.KLARNA && (
-                      <div className="border-t border-border pt-4 pb-4 px-8">
-                        {klarnaLoading && (
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />
-                            Loading Klarna payment options...
-                          </div>
-                        )}
-                        {klarnaError && (
-                          <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
-                            <p className="text-sm text-destructive">
-                              Failed to load Klarna payment options: {klarnaError.message}
-                            </p>
-                            <button
-                              onClick={retry}
-                              className="mt-2 text-sm text-primary hover:underline"
-                            >
-                              Try again
-                            </button>
-                          </div>
-                        )}
-                        
-                        {/* Only show enriched subheader from Klarna presentation */}
-                        <div id="klarna-enriched-subheader-container" className="min-h-[24px]">
-                          {/* Klarna enriched subheader will be mounted here */}
-                          {klarnaLoading && <Skeleton className="h-6 w-64" />}
-                        </div>
-                      </div>
-                    )}
+
+                    {/* Mount enriched subheader immediately but keep it hidden - positioned below the radio button */}
+                    <div
+                      className={`transition-opacity duration-200 px-4 pb-2 ${
+                        paymentMethod === PAYMENT_METHODS.KLARNA
+                          ? "opacity-100"
+                          : "opacity-0 pointer-events-none absolute -z-10"
+                      }`}
+                    >
+                      {klarnaLoading && <Skeleton className="h-6 w-64" />}
+                      {!klarnaLoading && klarnaPresentation && (
+                        <KlarnaEnrichedSubheader
+                          paymentPresentation={klarnaPresentation}
+                          onLog={addLog}
+                        />
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center space-x-3 p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors min-h-[64px]">
                     <RadioGroupItem value={PAYMENT_METHODS.PAYPAL} id="paypal" />
-                    <Label htmlFor="paypal" className="flex items-center gap-3 cursor-pointer flex-1">
+                    <Label
+                      htmlFor="paypal"
+                      className="flex items-center gap-3 cursor-pointer flex-1"
+                    >
                       <div className="w-9 h-9 flex items-center justify-center flex-shrink-0">
-                        <img 
-                          src="https://checkoutshopper-live.adyen.com/checkoutshopper/images/logos/medium/paypal.png" 
-                          alt="PayPal" 
-                          className="max-w-10 max-h-9 w-auto h-auto object-contain"
-                          loading="lazy"
+                        <Image
+                          src="https://checkoutshopper-live.adyen.com/checkoutshopper/images/logos/medium/paypal.png"
+                          alt="PayPal"
+                          width={40}
+                          height={36}
+                          className="object-contain"
                         />
                       </div>
                       <div className="flex flex-col">
                         <span className="font-medium">PayPal</span>
-                        <span className="text-sm text-muted-foreground">Pay with your PayPal account</span>
+                        <span className="text-sm text-muted-foreground">
+                          Pay with your PayPal account
+                        </span>
                       </div>
                     </Label>
                   </div>
@@ -414,16 +750,19 @@ export default function CheckoutPayment() {
                     <RadioGroupItem value={PAYMENT_METHODS.BANK} id="bank" />
                     <Label htmlFor="bank" className="flex items-center gap-3 cursor-pointer flex-1">
                       <div className="w-9 h-9 flex items-center justify-center flex-shrink-0">
-                        <img 
-                          src="https://checkoutshopper-live.adyen.com/checkoutshopper/images/logos/medium/bank.png" 
-                          alt="Bank Transfer" 
-                          className="max-w-9 max-h-9 w-auto h-auto object-contain"
-                          loading="lazy"
+                        <Image
+                          src="https://checkoutshopper-live.adyen.com/checkoutshopper/images/logos/medium/bank.png"
+                          alt="Bank Transfer"
+                          width={36}
+                          height={36}
+                          className="object-contain"
                         />
                       </div>
                       <div className="flex flex-col">
                         <span className="font-medium">Bank Transfer</span>
-                        <span className="text-sm text-muted-foreground">Direct bank account transfer</span>
+                        <span className="text-sm text-muted-foreground">
+                          Direct bank account transfer
+                        </span>
                       </div>
                     </Label>
                   </div>
@@ -503,6 +842,8 @@ export default function CheckoutPayment() {
                         autoComplete="given-name"
                         required
                         aria-describedby="firstName-error"
+                        value={formData.firstName}
+                        onChange={e => handleFieldChange("firstName", e.target.value)}
                       />
                     </div>
                     <div>
@@ -514,6 +855,8 @@ export default function CheckoutPayment() {
                         autoComplete="family-name"
                         required
                         aria-describedby="lastName-error"
+                        value={formData.lastName}
+                        onChange={e => handleFieldChange("lastName", e.target.value)}
                       />
                     </div>
                   </div>
@@ -526,6 +869,8 @@ export default function CheckoutPayment() {
                       autoComplete="street-address"
                       required
                       aria-describedby="address-error"
+                      value={formData.address}
+                      onChange={e => handleFieldChange("address", e.target.value)}
                     />
                   </div>
                   <div>
@@ -535,6 +880,8 @@ export default function CheckoutPayment() {
                       name="address2"
                       placeholder="Apartment, suite, etc."
                       autoComplete="address-line2"
+                      value={formData.address2}
+                      onChange={e => handleFieldChange("address2", e.target.value)}
                     />
                   </div>
                   <div className="grid grid-cols-3 gap-4">
@@ -547,6 +894,8 @@ export default function CheckoutPayment() {
                         autoComplete="address-level2"
                         required
                         aria-describedby="city-error"
+                        value={formData.city}
+                        onChange={e => handleFieldChange("city", e.target.value)}
                       />
                     </div>
                     <div>
@@ -558,6 +907,8 @@ export default function CheckoutPayment() {
                         autoComplete="address-level1"
                         required
                         aria-describedby="state-error"
+                        value={formData.state}
+                        onChange={e => handleFieldChange("state", e.target.value)}
                       />
                     </div>
                     <div>
@@ -569,6 +920,8 @@ export default function CheckoutPayment() {
                         autoComplete="postal-code"
                         required
                         aria-describedby="zip-error"
+                        value={formData.zip}
+                        onChange={e => handleFieldChange("zip", e.target.value)}
                       />
                     </div>
                   </div>
@@ -582,6 +935,8 @@ export default function CheckoutPayment() {
                       autoComplete="tel"
                       required
                       aria-describedby="phone-error"
+                      value={formData.phone}
+                      onChange={e => handleFieldChange("phone", e.target.value)}
                     />
                   </div>
 
@@ -589,10 +944,12 @@ export default function CheckoutPayment() {
                     <Checkbox
                       id="differentBilling"
                       checked={differentBilling}
-                      onCheckedChange={(checked) => setDifferentBilling(checked === true)}
+                      onCheckedChange={checked => setDifferentBilling(checked === true)}
                       aria-describedby="differentBilling-description"
                     />
-                    <Label htmlFor="differentBilling">Billing address is different from shipping address</Label>
+                    <Label htmlFor="differentBilling">
+                      Billing address is different from shipping address
+                    </Label>
                   </div>
 
                   {differentBilling && (
@@ -608,6 +965,8 @@ export default function CheckoutPayment() {
                               placeholder="John"
                               autoComplete="billing given-name"
                               required
+                              value={formData.billingFirstName}
+                              onChange={e => handleFieldChange("billingFirstName", e.target.value)}
                             />
                           </div>
                           <div>
@@ -618,6 +977,8 @@ export default function CheckoutPayment() {
                               placeholder="Doe"
                               autoComplete="billing family-name"
                               required
+                              value={formData.billingLastName}
+                              onChange={e => handleFieldChange("billingLastName", e.target.value)}
                             />
                           </div>
                         </div>
@@ -629,6 +990,19 @@ export default function CheckoutPayment() {
                             placeholder="456 Oak Avenue"
                             autoComplete="billing street-address"
                             required
+                            value={formData.billingAddress}
+                            onChange={e => handleFieldChange("billingAddress", e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="billingAddress2">Address Line 2 (Optional)</Label>
+                          <Input
+                            id="billingAddress2"
+                            name="billingAddress2"
+                            placeholder="Apartment, suite, etc."
+                            autoComplete="billing address-line2"
+                            value={formData.billingAddress2}
+                            onChange={e => handleFieldChange("billingAddress2", e.target.value)}
                           />
                         </div>
                         <div className="grid grid-cols-3 gap-4">
@@ -640,6 +1014,8 @@ export default function CheckoutPayment() {
                               placeholder="Boston"
                               autoComplete="billing address-level2"
                               required
+                              value={formData.billingCity}
+                              onChange={e => handleFieldChange("billingCity", e.target.value)}
                             />
                           </div>
                           <div>
@@ -650,6 +1026,8 @@ export default function CheckoutPayment() {
                               placeholder="MA"
                               autoComplete="billing address-level1"
                               required
+                              value={formData.billingState}
+                              onChange={e => handleFieldChange("billingState", e.target.value)}
                             />
                           </div>
                           <div>
@@ -660,8 +1038,23 @@ export default function CheckoutPayment() {
                               placeholder="02101"
                               autoComplete="billing postal-code"
                               required
+                              value={formData.billingZip}
+                              onChange={e => handleFieldChange("billingZip", e.target.value)}
                             />
                           </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="billingPhone">Phone Number</Label>
+                          <Input
+                            id="billingPhone"
+                            name="billingPhone"
+                            type="tel"
+                            placeholder="+1 (555) 123-4567"
+                            autoComplete="billing tel"
+                            required
+                            value={formData.billingPhone}
+                            onChange={e => handleFieldChange("billingPhone", e.target.value)}
+                          />
                         </div>
                       </fieldset>
                     </div>
@@ -680,15 +1073,15 @@ export default function CheckoutPayment() {
               <CardContent className="space-y-4">
                 {/* Cart Items */}
                 <div className="space-y-4" role="list" aria-label="Cart items">
-                  {cartItems.map((item) => (
+                  {cartItems.map(item => (
                     <div key={item.id} className="flex items-center gap-3" role="listitem">
                       <div className="relative">
-                        <img
+                        <Image
                           src={item.image || "/placeholder.svg"}
                           alt={item.name}
-                          className="w-16 h-16 object-cover rounded-md border"
-                          loading="lazy"
-                          decoding="async"
+                          width={64}
+                          height={64}
+                          className="object-cover rounded-md border"
                         />
                         {item.quantity > 1 && (
                           <span
@@ -703,7 +1096,9 @@ export default function CheckoutPayment() {
                         <p className="text-sm font-medium truncate">{item.name}</p>
                         <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
                       </div>
-                      <p className="text-sm font-medium">{formatCurrency(item.price * item.quantity)}</p>
+                      <p className="text-sm font-medium">
+                        {formatCurrency(item.price * item.quantity)}
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -731,17 +1126,39 @@ export default function CheckoutPayment() {
                   </div>
                 </div>
 
-                <Button
-                  type="submit"
-                  className="w-full mt-6"
-                  size="lg"
-                  disabled={isSubmitting}
-                  aria-describedby="submit-description"
-                >
-                  {submitButtonText}
-                </Button>
+                {/* Conditionally render either Klarna payment button or standard button */}
+                {paymentMethod === PAYMENT_METHODS.KLARNA ? (
+                  <div
+                    ref={klarnaButtonContainerRef}
+                    className="w-full mt-6 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 bg-primary text-primary-foreground hover:bg-primary/90 h-11 px-8 overflow-hidden"
+                    style={{
+                      maxHeight: "44px",
+                      minHeight: "44px",
+                      pointerEvents: "auto",
+                    }}
+                  />
+                ) : (
+                  <Button
+                    type="submit"
+                    className="w-full mt-6"
+                    size="lg"
+                    disabled={isSubmitting}
+                    aria-describedby="submit-description"
+                  >
+                    {submitButtonText}
+                  </Button>
+                )}
 
-                <p id="submit-description" className="text-xs text-muted-foreground text-center mt-4 leading-relaxed">
+                {submitError && (
+                  <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                    <p className="text-sm text-destructive">{submitError}</p>
+                  </div>
+                )}
+
+                <p
+                  id="submit-description"
+                  className="text-xs text-muted-foreground text-center mt-4 leading-relaxed"
+                >
                   By completing your order, you agree to our{" "}
                   <Link
                     href="/terms"
@@ -763,13 +1180,9 @@ export default function CheckoutPayment() {
           </div>
         </div>
       </form>
-      
+
       {/* Klarna Debug Console */}
-      <KlarnaDebugAlert 
-        logs={logs} 
-        onClearLogs={clearLogs}
-        className="border-primary/20" 
-      />
+      <KlarnaDebugAlert logs={logs} onClearLogs={clearLogs} className="border-primary/20" />
     </div>
   )
 }

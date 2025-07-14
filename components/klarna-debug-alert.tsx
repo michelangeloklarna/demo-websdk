@@ -1,22 +1,22 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
-import { 
-  Info, 
-  CheckCircle, 
-  AlertTriangle, 
-  XCircle, 
-  Code2, 
-  Eye, 
+import {
+  Info,
+  CheckCircle,
+  AlertTriangle,
+  XCircle,
+  Code2,
+  Eye,
   EyeOff,
   Trash2,
-  Settings
+  Settings,
 } from "lucide-react"
 
 export interface KlarnaLogEntry {
@@ -92,12 +92,12 @@ export function KlarnaDebugAlert({ logs, onClearLogs, className }: KlarnaDebugAl
   }
 
   const formatTimestamp = (date: Date) => {
-    return date.toLocaleTimeString('en-US', {
+    return date.toLocaleTimeString("en-US", {
       hour12: false,
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      fractionalSecondDigits: 3
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      fractionalSecondDigits: 3,
     })
   }
 
@@ -118,7 +118,9 @@ export function KlarnaDebugAlert({ logs, onClearLogs, className }: KlarnaDebugAl
   }
 
   return (
-    <Card className={`fixed bottom-4 right-4 w-96 max-w-[90vw] max-h-[60vh] z-50 shadow-lg border-2 ${className}`}>
+    <Card
+      className={`fixed bottom-4 right-4 w-96 max-w-[90vw] max-h-[60vh] z-50 shadow-lg border-2 ${className}`}
+    >
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between text-sm">
           <div className="flex items-center gap-2">
@@ -164,7 +166,7 @@ export function KlarnaDebugAlert({ logs, onClearLogs, className }: KlarnaDebugAl
             ) : (
               logs.map((log, index) => (
                 <div key={log.id}>
-                  <Alert 
+                  <Alert
                     variant={getAlertVariant(log.type)}
                     className="cursor-pointer hover:bg-muted/50 transition-colors"
                     onClick={() => toggleLogExpansion(log.id)}
@@ -177,10 +179,7 @@ export function KlarnaDebugAlert({ logs, onClearLogs, className }: KlarnaDebugAl
                             {log.title}
                           </AlertTitle>
                           <div className="flex items-center gap-2 flex-shrink-0">
-                            <Badge 
-                              variant={getBadgeVariant(log.type)}
-                              className="text-xs"
-                            >
+                            <Badge variant={getBadgeVariant(log.type)} className="text-xs">
                               {log.type}
                             </Badge>
                             <span className="text-xs text-muted-foreground">
@@ -188,10 +187,8 @@ export function KlarnaDebugAlert({ logs, onClearLogs, className }: KlarnaDebugAl
                             </span>
                           </div>
                         </div>
-                        <AlertDescription className="text-xs">
-                          {log.message}
-                        </AlertDescription>
-                        
+                        <AlertDescription className="text-xs">{log.message}</AlertDescription>
+
                         {expandedLogs.has(log.id) && log.data && (
                           <div className="mt-2 p-2 bg-muted rounded-md">
                             <div className="flex items-center gap-1 mb-1">
@@ -203,46 +200,74 @@ export function KlarnaDebugAlert({ logs, onClearLogs, className }: KlarnaDebugAl
                               <div className="space-y-2">
                                 {log.data.instruction && (
                                   <div className="text-xs">
-                                    <span className="font-medium text-blue-600">🎯 Instruction:</span> 
+                                    <span className="font-medium text-blue-600">
+                                      🎯 Instruction:
+                                    </span>
                                     <Badge variant="outline" className="ml-1 text-xs">
                                       {log.data.instruction}
                                     </Badge>
                                   </div>
                                 )}
-                                
+
                                 <div className="grid grid-cols-2 gap-1 text-xs">
                                   <div className="flex items-center gap-1">
                                     <span className="text-green-600">🖼️</span>
-                                    <span className={log.data.hasIcon ? "text-green-600" : "text-red-500"}>
+                                    <span
+                                      className={
+                                        log.data.hasIcon ? "text-green-600" : "text-red-500"
+                                      }
+                                    >
                                       Icon: {log.data.hasIcon ? "✓" : "✗"}
                                     </span>
                                   </div>
                                   <div className="flex items-center gap-1">
                                     <span className="text-blue-600">📰</span>
-                                    <span className={log.data.hasHeader ? "text-green-600" : "text-red-500"}>
+                                    <span
+                                      className={
+                                        log.data.hasHeader ? "text-green-600" : "text-red-500"
+                                      }
+                                    >
                                       Header: {log.data.hasHeader ? "✓" : "✗"}
                                     </span>
                                   </div>
                                   <div className="flex items-center gap-1">
                                     <span className="text-purple-600">📝</span>
-                                    <span className={log.data.hasShortSubheader ? "text-green-600" : "text-red-500"}>
+                                    <span
+                                      className={
+                                        log.data.hasShortSubheader
+                                          ? "text-green-600"
+                                          : "text-red-500"
+                                      }
+                                    >
                                       Short: {log.data.hasShortSubheader ? "✓" : "✗"}
                                     </span>
                                   </div>
                                   <div className="flex items-center gap-1">
                                     <span className="text-purple-600">📝</span>
-                                    <span className={log.data.hasEnrichedSubheader ? "text-green-600" : "text-red-500"}>
+                                    <span
+                                      className={
+                                        log.data.hasEnrichedSubheader
+                                          ? "text-green-600"
+                                          : "text-red-500"
+                                      }
+                                    >
                                       Enriched: {log.data.hasEnrichedSubheader ? "✓" : "✗"}
                                     </span>
                                   </div>
                                   <div className="flex items-center gap-1 col-span-2">
                                     <span className="text-orange-600">🔘</span>
-                                    <span className={log.data.hasPaymentButton ? "text-green-600" : "text-red-500"}>
+                                    <span
+                                      className={
+                                        log.data.hasPaymentButton
+                                          ? "text-green-600"
+                                          : "text-red-500"
+                                      }
+                                    >
                                       Payment Button: {log.data.hasPaymentButton ? "✓" : "✗"}
                                     </span>
                                   </div>
                                 </div>
-                                
+
                                 {log.data.presentationKeys && (
                                   <div className="text-xs">
                                     <span className="font-medium">Available Keys:</span>
@@ -259,15 +284,20 @@ export function KlarnaDebugAlert({ logs, onClearLogs, className }: KlarnaDebugAl
                             ) : log.title.includes("SDK Structure") && log.data.availableMethods ? (
                               /* Enhanced display for SDK structure */
                               <div className="space-y-2">
-                                <div className="text-xs font-medium text-blue-600">🔍 SDK Methods Analysis:</div>
+                                <div className="text-xs font-medium text-blue-600">
+                                  🔍 SDK Methods Analysis:
+                                </div>
                                 <div className="space-y-1 max-h-32 overflow-y-auto">
                                   {log.data.availableMethods.map((method: any, index: number) => (
-                                    <div key={index} className="text-xs p-1 bg-background rounded border">
+                                    <div
+                                      key={index}
+                                      className="text-xs p-1 bg-background rounded border"
+                                    >
                                       <div className="flex items-center justify-between">
                                         <span className="font-medium">{method.key}</span>
                                         <div className="flex gap-1">
-                                          <Badge 
-                                            variant={method.isFunction ? "default" : "secondary"} 
+                                          <Badge
+                                            variant={method.isFunction ? "default" : "secondary"}
                                             className="text-xs"
                                           >
                                             {method.type}
@@ -279,25 +309,33 @@ export function KlarnaDebugAlert({ logs, onClearLogs, className }: KlarnaDebugAl
                                           )}
                                         </div>
                                       </div>
-                                      {method.hasNestedMethods && method.hasNestedMethods.length > 0 && (
-                                        <div className="mt-1 flex flex-wrap gap-1">
-                                          {method.hasNestedMethods.slice(0, 3).map((nestedMethod: string) => (
-                                            <Badge key={nestedMethod} variant="outline" className="text-xs">
-                                              .{nestedMethod}
-                                            </Badge>
-                                          ))}
-                                          {method.hasNestedMethods.length > 3 && (
-                                            <Badge variant="outline" className="text-xs">
-                                              +{method.hasNestedMethods.length - 3} more
-                                            </Badge>
-                                          )}
-                                        </div>
-                                      )}
+                                      {method.hasNestedMethods &&
+                                        method.hasNestedMethods.length > 0 && (
+                                          <div className="mt-1 flex flex-wrap gap-1">
+                                            {method.hasNestedMethods
+                                              .slice(0, 3)
+                                              .map((nestedMethod: string) => (
+                                                <Badge
+                                                  key={nestedMethod}
+                                                  variant="outline"
+                                                  className="text-xs"
+                                                >
+                                                  .{nestedMethod}
+                                                </Badge>
+                                              ))}
+                                            {method.hasNestedMethods.length > 3 && (
+                                              <Badge variant="outline" className="text-xs">
+                                                +{method.hasNestedMethods.length - 3} more
+                                              </Badge>
+                                            )}
+                                          </div>
+                                        )}
                                     </div>
                                   ))}
                                 </div>
                               </div>
-                            ) : log.title.includes("SDK Initialized") && log.data.availableMethods ? (
+                            ) : log.title.includes("SDK Initialized") &&
+                              log.data.availableMethods ? (
                               /* Enhanced display for SDK initialization */
                               <div className="space-y-2">
                                 <div className="grid grid-cols-2 gap-2 text-xs">
@@ -307,19 +345,149 @@ export function KlarnaDebugAlert({ logs, onClearLogs, className }: KlarnaDebugAl
                                   </div>
                                   <div className="flex items-center gap-1">
                                     <span className="text-blue-600">💳</span>
-                                    <span className={log.data.hasPaymentMethod ? "text-green-600" : "text-red-500"}>
+                                    <span
+                                      className={
+                                        log.data.hasPaymentMethod
+                                          ? "text-green-600"
+                                          : "text-red-500"
+                                      }
+                                    >
                                       Payment: {log.data.hasPaymentMethod ? "✓" : "✗"}
                                     </span>
                                   </div>
                                 </div>
-                                
-                                {log.data.availableMethods && log.data.availableMethods.length > 0 && (
+
+                                {log.data.availableMethods &&
+                                  log.data.availableMethods.length > 0 && (
+                                    <div className="text-xs">
+                                      <span className="font-medium">Available Methods:</span>
+                                      <div className="flex flex-wrap gap-1 mt-1">
+                                        {log.data.availableMethods.map((method: string) => (
+                                          <Badge
+                                            key={method}
+                                            variant="secondary"
+                                            className="text-xs"
+                                          >
+                                            {method}
+                                          </Badge>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                              </div>
+                            ) : log.title.includes("API Request") ? (
+                              /* Enhanced display for API requests */
+                              <div className="space-y-2">
+                                <div className="text-xs font-medium text-blue-600">
+                                  🌐 API Request Details:
+                                </div>
+                                {log.data.url && (
                                   <div className="text-xs">
-                                    <span className="font-medium">Available Methods:</span>
+                                    <span className="font-medium">URL:</span>
+                                    <Badge variant="outline" className="ml-1 text-xs">
+                                      {log.data.url}
+                                    </Badge>
+                                  </div>
+                                )}
+                                {log.data.method && (
+                                  <div className="text-xs">
+                                    <span className="font-medium">Method:</span>
+                                    <Badge variant="secondary" className="ml-1 text-xs">
+                                      {log.data.method}
+                                    </Badge>
+                                  </div>
+                                )}
+                                {log.data.requestSize && (
+                                  <div className="text-xs">
+                                    <span className="font-medium">Request Size:</span>
+                                    <span className="ml-1">{log.data.requestSize} bytes</span>
+                                  </div>
+                                )}
+                              </div>
+                            ) : log.title.includes("API Response") ? (
+                              /* Enhanced display for API responses */
+                              <div className="space-y-2">
+                                <div className="text-xs font-medium text-green-600">
+                                  📡 API Response Details:
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                  {log.data.status && (
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-blue-600">📊</span>
+                                      <span>Status: {log.data.status}</span>
+                                    </div>
+                                  )}
+                                  {log.data.responseSize && (
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-green-600">📏</span>
+                                      <span>Size: {log.data.responseSize} bytes</span>
+                                    </div>
+                                  )}
+                                  {log.data.responseTime && (
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-purple-600">⏱️</span>
+                                      <span>Time: {log.data.responseTime}ms</span>
+                                    </div>
+                                  )}
+                                  {log.data.result && (
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-orange-600">🎯</span>
+                                      <span>Result: {log.data.result}</span>
+                                    </div>
+                                  )}
+                                </div>
+                                {log.data.paymentRequestId && (
+                                  <div className="text-xs">
+                                    <span className="font-medium">Payment Request ID:</span>
+                                    <Badge variant="outline" className="ml-1 text-xs">
+                                      {log.data.paymentRequestId}
+                                    </Badge>
+                                  </div>
+                                )}
+                              </div>
+                            ) : log.title.includes("Component") && log.data.componentKeys ? (
+                              /* Enhanced display for component analysis */
+                              <div className="space-y-2">
+                                <div className="text-xs font-medium text-purple-600">
+                                  🧩 Component Analysis:
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-blue-600">📦</span>
+                                    <span>Type: {log.data.componentType}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-green-600">🔧</span>
+                                    <span
+                                      className={
+                                        log.data.hasMount ? "text-green-600" : "text-red-500"
+                                      }
+                                    >
+                                      Mount: {log.data.hasMount ? "✓" : "✗"}
+                                    </span>
+                                  </div>
+                                  {log.data.hasHtmlElement !== undefined && (
+                                    <div className="flex items-center gap-1 col-span-2">
+                                      <span className="text-purple-600">🌐</span>
+                                      <span
+                                        className={
+                                          log.data.hasHtmlElement
+                                            ? "text-green-600"
+                                            : "text-red-500"
+                                        }
+                                      >
+                                        HTML Element: {log.data.hasHtmlElement ? "✓" : "✗"}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                                {log.data.componentKeys && log.data.componentKeys.length > 0 && (
+                                  <div className="text-xs">
+                                    <span className="font-medium">Available Properties:</span>
                                     <div className="flex flex-wrap gap-1 mt-1">
-                                      {log.data.availableMethods.map((method: string) => (
-                                        <Badge key={method} variant="secondary" className="text-xs">
-                                          {method}
+                                      {log.data.componentKeys.map((key: string) => (
+                                        <Badge key={key} variant="secondary" className="text-xs">
+                                          {key}
                                         </Badge>
                                       ))}
                                     </div>
@@ -329,10 +497,9 @@ export function KlarnaDebugAlert({ logs, onClearLogs, className }: KlarnaDebugAl
                             ) : (
                               /* Default display for other data */
                               <pre className="text-xs text-muted-foreground whitespace-pre-wrap break-all max-h-32 overflow-y-auto">
-                                {typeof log.data === 'string' 
-                                  ? log.data 
-                                  : JSON.stringify(log.data, null, 2)
-                                }
+                                {typeof log.data === "string"
+                                  ? log.data
+                                  : JSON.stringify(log.data, null, 2)}
                               </pre>
                             )}
                           </div>

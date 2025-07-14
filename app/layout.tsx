@@ -1,4 +1,4 @@
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import type { ReactNode } from "react"
 import { Geist, Geist_Mono } from "next/font/google"
 import "./globals.css"
@@ -20,8 +20,12 @@ export const metadata: Metadata = {
   description: "Shop the latest electronics, gadgets, and tech accessories with secure checkout",
   keywords: ["electronics", "gadgets", "tech", "accessories", "online store"],
   authors: [{ name: "TechStore" }],
-  viewport: "width=device-width, initial-scale=1",
-    generator: 'v0.dev'
+  generator: "v0.dev",
+}
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 }
 
 interface RootLayoutProps {
@@ -35,9 +39,16 @@ export default function RootLayout({ children }: RootLayoutProps) {
         {/* DNS prefetch for Klarna CDN */}
         <link rel="dns-prefetch" href="//js.klarna.com" />
         {/* Preload Klarna SDK for faster loading */}
-        <link rel="preload" href="https://js.klarna.com/web-sdk/v2/klarna.mjs" as="script" crossOrigin="anonymous" />
+        <link
+          rel="preload"
+          href="https://js.klarna.com/web-sdk/v2/klarna.mjs"
+          as="script"
+          crossOrigin="anonymous"
+        />
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>{children}</body>
+      <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
+        {children}
+      </body>
     </html>
   )
 }
