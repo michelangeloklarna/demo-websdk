@@ -63,7 +63,6 @@ const KlarnaComponent = ({
     return path.split(".").reduce((current, key) => current?.[key], obj)
   }
 
-  // Stable logging function that doesn't cause re-renders
   const logInfo = useCallback(
     (
       type: "info" | "success" | "warning" | "error",
@@ -71,106 +70,93 @@ const KlarnaComponent = ({
       message: string,
       data?: any
     ) => {
-      console.log(`[${componentName}] ${title}: ${message}`, data || "")
-      onLog?.(type, title, message, data)
+      onLog?.(type, title, message, data);
     },
-    [componentName, onLog]
-  )
+    [onLog]
+  );
 
   // Removed visibility observer - all components now mount when SDK is ready
 
-  // Consolidated mounting effect - handles SDK readiness
   useEffect(() => {
-    // Reset mount attempt flag when dependencies change
-    mountAttempted.current = false
-
-    // All components now mount when SDK is ready (no special visibility logic)
+    mountAttempted.current = false;
 
     if (!paymentPresentation) {
-      logInfo("info", `${componentName} Mount Skipped`, "Payment presentation not available")
-      return
+      logInfo("info", `${componentName} Mount Skipped`, "Payment presentation not available");
+      return;
     }
 
     if (!containerRef.current) {
-      logInfo("info", `${componentName} Mount Skipped`, "Container ref not available")
-      return
+      logInfo("info", `${componentName} Mount Skipped`, "Container ref not available");
+      return;
     }
 
     if (mountAttempted.current) {
-      logInfo("info", `${componentName} Mount Skipped`, "Mount already attempted")
-      return
+      logInfo("info", `${componentName} Mount Skipped`, "Mount already attempted");
+      return;
     }
 
-    const component = getComponent(paymentPresentation, componentPath)
+    const component = getComponent(paymentPresentation, componentPath);
     if (!component) {
-      logInfo("warning", `${componentName} Mount`, "Component not available in presentation")
-      return
+      logInfo("warning", `${componentName} Mount`, "Component not available in presentation");
+      return;
     }
 
-    // Clean up existing component first
     if (componentRef.current) {
       try {
-        componentRef.current.unmount()
-        componentRef.current = null
+        componentRef.current.unmount();
+        componentRef.current = null;
       } catch (error) {
-        console.log(`❌ [${componentName}] Error unmounting:`, error)
+        logInfo("error", `${componentName} Unmount Error`, "Failed to unmount component", error);
       }
     }
 
-    // Mount component
-    logInfo("info", `${componentName} Mount`, "Attempting to mount component")
+    logInfo("info", `${componentName} Mount`, "Attempting to mount component");
 
     try {
-      mountAttempted.current = true
-
-      // Clear container first
-      containerRef.current.innerHTML = ""
-
-      // Create and mount component
-      const componentInstance = component()
-      logInfo("info", `${componentName} Created`, "Component instance created")
+      mountAttempted.current = true;
+      containerRef.current.innerHTML = "";
+      const componentInstance = component();
+      logInfo("info", `${componentName} Created`, "Component instance created");
 
       if (componentInstance.mount) {
-        componentInstance.mount(`#${containerId}`)
-        logInfo("success", `${componentName} Mounted`, "Mounted via mount method")
+        componentInstance.mount(`#${containerId}`);
+        logInfo("success", `${componentName} Mounted`, "Mounted via mount method");
       } else if (componentInstance.htmlElement) {
-        containerRef.current.appendChild(componentInstance.htmlElement)
-        logInfo("success", `${componentName} Mounted`, "Mounted via htmlElement")
+        containerRef.current.appendChild(componentInstance.htmlElement);
+        logInfo("success", `${componentName} Mounted`, "Mounted via htmlElement");
 
-        // Create compatible unmount method
-        const originalUnmount = componentInstance.unmount
+        const originalUnmount = componentInstance.unmount;
         componentInstance.unmount = () => {
           try {
             if (componentInstance.htmlElement?.parentNode) {
-              componentInstance.htmlElement.parentNode.removeChild(componentInstance.htmlElement)
+              componentInstance.htmlElement.parentNode.removeChild(componentInstance.htmlElement);
             }
-            originalUnmount?.call(componentInstance)
+            originalUnmount?.call(componentInstance);
           } catch (error) {
-            console.log(`❌ [${componentName}] Error in custom unmount:`, error)
+            logInfo("error", `${componentName} Custom Unmount Error`, "Failed to unmount component", error);
           }
-        }
+        };
       } else {
-        throw new Error(`Component has neither mount method nor htmlElement property`)
+        throw new Error("Component has neither mount method nor htmlElement property");
       }
 
-      componentRef.current = componentInstance
+      componentRef.current = componentInstance;
     } catch (error) {
-      mountAttempted.current = false
-      logInfo("error", `${componentName} Error`, "Failed to mount component", error)
+      mountAttempted.current = false;
+      logInfo("error", `${componentName} Error`, "Failed to mount component", error);
     }
 
-    // Cleanup on unmount
     return () => {
       if (componentRef.current) {
         try {
-          componentRef.current.unmount()
-          componentRef.current = null
+          componentRef.current.unmount();
+          componentRef.current = null;
         } catch (error) {
-          console.log(`❌ [${componentName}] Error during cleanup:`, error)
+          logInfo("error", `${componentName} Cleanup Error`, "Failed to unmount component", error);
         }
       }
-    }
-  }, [componentName, componentPath, containerId, paymentPresentation, logInfo])
+    };
+  }, [componentName, componentPath, containerId, paymentPresentation, logInfo]);
 
   return <div id={containerId} ref={containerRef} className={className} />
 }
