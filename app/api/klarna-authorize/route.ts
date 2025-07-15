@@ -169,7 +169,11 @@ export async function POST(request: NextRequest) {
           JSON.stringify(errorData, null, 2)
         );
         return NextResponse.json(
-          { error: "Payment authorization failed", details: errorData },
+          {
+            error: "Payment authorization failed",
+            details: errorData,
+            klarnaApiRequest: cleanedPaymentRequest,
+          },
           { status: klarnaResponse.status }
         );
       }
@@ -179,7 +183,10 @@ export async function POST(request: NextRequest) {
         "✅ Klarna API Response:",
         JSON.stringify(klarnaData, null, 2)
       );
-      return NextResponse.json(klarnaData);
+      return NextResponse.json({
+        ...klarnaData,
+        klarnaApiRequest: cleanedPaymentRequest,
+      });
     } catch (apiError) {
       console.error("Error calling Klarna API:", apiError);
       return NextResponse.json(
