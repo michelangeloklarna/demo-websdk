@@ -26,8 +26,6 @@ import { COUNTRIES, getCurrencyForLocale, getCountryCodeForLocale } from "@/lib/
 import { calculateOrderSummary, formatCurrency } from "@/lib/utils"
 import type { PaymentData } from "@/types"
 import { useKlarna } from "@/hooks/use-klarna"
-import { useKlarnaLogger } from "@/hooks/use-klarna-logger"
-import { KlarnaDebugAlert } from "@/components/klarna-debug-alert"
 import {
   CurrencyLocaleSelector,
   CurrencyLocaleDisplay,
@@ -41,19 +39,12 @@ const KlarnaComponent = ({
   containerId,
   componentName,
   className = "min-h-[20px]",
-  onLog,
 }: {
   paymentPresentation: any
   componentPath: string // e.g., "icon.component", "header.component", "subheader.enriched.component"
   containerId: string
   componentName: string
   className?: string
-  onLog?: (
-    type: "info" | "success" | "warning" | "error",
-    title: string,
-    message: string,
-    data?: any
-  ) => void
 }) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const componentRef = useRef<any>(null)
@@ -65,15 +56,10 @@ const KlarnaComponent = ({
   }
 
   const logInfo = useCallback(
-    (
-      type: "info" | "success" | "warning" | "error",
-      title: string,
-      message: string,
-      data?: any
-    ) => {
-      onLog?.(type, title, message, data);
+    () => {
+      // Logging is disabled
     },
-    [onLog]
+    []
   );
 
   // Removed visibility observer - all components now mount when SDK is ready
@@ -82,23 +68,23 @@ const KlarnaComponent = ({
     mountAttempted.current = false;
 
     if (!paymentPresentation) {
-      logInfo("info", `${componentName} Mount Skipped`, "Payment presentation not available");
+      logInfo();
       return;
     }
 
     if (!containerRef.current) {
-      logInfo("info", `${componentName} Mount Skipped`, "Container ref not available");
+      logInfo();
       return;
     }
 
     if (mountAttempted.current) {
-      logInfo("info", `${componentName} Mount Skipped`, "Mount already attempted");
+      logInfo();
       return;
     }
 
     const component = getComponent(paymentPresentation, componentPath);
     if (!component) {
-      logInfo("warning", `${componentName} Mount`, "Component not available in presentation");
+      logInfo();
       return;
     }
 
@@ -106,25 +92,25 @@ const KlarnaComponent = ({
       try {
         componentRef.current.unmount();
         componentRef.current = null;
-      } catch (error) {
-        logInfo("error", `${componentName} Unmount Error`, "Failed to unmount component", error);
+      } catch {
+        logInfo();
       }
     }
 
-    logInfo("info", `${componentName} Mount`, "Attempting to mount component");
+    logInfo();
 
     try {
       mountAttempted.current = true;
       containerRef.current.innerHTML = "";
       const componentInstance = component();
-      logInfo("info", `${componentName} Created`, "Component instance created");
+      logInfo();
 
       if (componentInstance.mount) {
         componentInstance.mount(`#${containerId}`);
-        logInfo("success", `${componentName} Mounted`, "Mounted via mount method");
+        logInfo();
       } else if (componentInstance.htmlElement) {
         containerRef.current.appendChild(componentInstance.htmlElement);
-        logInfo("success", `${componentName} Mounted`, "Mounted via htmlElement");
+        logInfo();
 
         const originalUnmount = componentInstance.unmount;
         componentInstance.unmount = () => {
@@ -133,8 +119,8 @@ const KlarnaComponent = ({
               componentInstance.htmlElement.parentNode.removeChild(componentInstance.htmlElement);
             }
             originalUnmount?.call(componentInstance);
-          } catch (error) {
-            logInfo("error", `${componentName} Custom Unmount Error`, "Failed to unmount component", error);
+          } catch {
+            logInfo();
           }
         };
       } else {
@@ -142,9 +128,9 @@ const KlarnaComponent = ({
       }
 
       componentRef.current = componentInstance;
-    } catch (error) {
+    } catch {
       mountAttempted.current = false;
-      logInfo("error", `${componentName} Error`, "Failed to mount component", error);
+      logInfo();
     }
 
     return () => {
@@ -152,8 +138,8 @@ const KlarnaComponent = ({
         try {
           componentRef.current.unmount();
           componentRef.current = null;
-        } catch (error) {
-          logInfo("error", `${componentName} Cleanup Error`, "Failed to unmount component", error);
+        } catch {
+          logInfo();
         }
       }
     };
@@ -166,12 +152,6 @@ const KlarnaComponent = ({
 const KlarnaIcon = React.memo(
   (props: {
     paymentPresentation: any
-    onLog?: (
-      type: "info" | "success" | "warning" | "error",
-      title: string,
-      message: string,
-      data?: any
-    ) => void
   }) => (
     <KlarnaComponent
       paymentPresentation={props.paymentPresentation}
@@ -179,7 +159,6 @@ const KlarnaIcon = React.memo(
       containerId="klarna-icon-container"
       componentName="Icon"
       className="max-w-9 max-h-9 w-auto h-auto flex items-center justify-center [&>*]:max-w-full [&>*]:max-h-full [&>*]:w-auto [&>*]:h-auto [&>*]:object-contain"
-      onLog={props.onLog}
     />
   )
 )
@@ -187,12 +166,6 @@ const KlarnaIcon = React.memo(
 const KlarnaHeader = React.memo(
   (props: {
     paymentPresentation: any
-    onLog?: (
-      type: "info" | "success" | "warning" | "error",
-      title: string,
-      message: string,
-      data?: any
-    ) => void
   }) => (
     <KlarnaComponent
       paymentPresentation={props.paymentPresentation}
@@ -200,7 +173,6 @@ const KlarnaHeader = React.memo(
       containerId="klarna-header-container"
       componentName="Header"
       className="flex items-center text-sm font-medium leading-tight"
-      onLog={props.onLog}
     />
   )
 )
@@ -208,12 +180,6 @@ const KlarnaHeader = React.memo(
 const KlarnaShortSubheader = React.memo(
   (props: {
     paymentPresentation: any
-    onLog?: (
-      type: "info" | "success" | "warning" | "error",
-      title: string,
-      message: string,
-      data?: any
-    ) => void
   }) => (
     <KlarnaComponent
       paymentPresentation={props.paymentPresentation}
@@ -221,7 +187,6 @@ const KlarnaShortSubheader = React.memo(
       containerId="klarna-short-subheader-container"
       componentName="Short Subheader"
       className="flex items-center text-xs text-muted-foreground leading-tight mt-0.5"
-      onLog={props.onLog}
     />
   )
 )
@@ -229,12 +194,6 @@ const KlarnaShortSubheader = React.memo(
 const KlarnaEnrichedSubheader = React.memo(
   (props: {
     paymentPresentation: any
-    onLog?: (
-      type: "info" | "success" | "warning" | "error",
-      title: string,
-      message: string,
-      data?: any
-    ) => void
   }) => (
     <KlarnaComponent
       paymentPresentation={props.paymentPresentation}
@@ -242,7 +201,6 @@ const KlarnaEnrichedSubheader = React.memo(
       containerId="klarna-enriched-subheader-container"
       componentName="Enriched Subheader"
       className="min-h-[40px]"
-      onLog={props.onLog}
     />
   ),
   (prevProps, nextProps) => {
@@ -387,15 +345,11 @@ export default function CheckoutPayment() {
   const klarnaButtonContainerRef = useRef<HTMLDivElement>(null)
   const klarnaButtonRef = useRef<any>(null)
 
-  // Initialize Klarna logging
-  const { logs, addLog, clearLogs } = useKlarnaLogger()
-
   // Load Klarna WebSDK with logging - now uses selected currency and locale
   const { klarnaPresentation, isLoading: klarnaLoading } = useKlarna({
     amount: orderSummary.total,
     currency: currency,
     locale: locale,
-    onLog: addLog,
   })
 
   // Handle currency change - optimized to reduce re-renders
@@ -448,8 +402,6 @@ export default function CheckoutPayment() {
 
       // Payment initiation function
       initiate: () => {
-        addLog("info", "Payment Button Initiated", "Starting payment process")
-
         // Extract addresses from form state
         const shipping = {
           firstName: formData.firstName,
@@ -499,13 +451,6 @@ export default function CheckoutPayment() {
         }
         const requestBody = JSON.stringify(payload)
 
-        addLog("info", "API Request", "Sending payment authorization request", {
-          url: "/api/klarna-authorize",
-          method: "POST",
-          requestSize: new Blob([requestBody]).size,
-          payload: payload,
-        })
-
         return fetch("/api/klarna-authorize", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -514,11 +459,8 @@ export default function CheckoutPayment() {
           .then((response) => response.json())
           .then((data) => {
             if (data.error) {
-              addLog("error", "API Error", data.error, data.details);
               throw new Error(data.error);
             }
-
-            addLog("success", "API Response", "Klarna authorization successful", data);
 
             if (
               data?.payment_transaction_response?.result === "STEP_UP_REQUIRED" &&
@@ -542,12 +484,11 @@ export default function CheckoutPayment() {
             throw new Error("Unexpected payment result");
           })
           .catch((error) => {
-            addLog("error", "Payment Error", "Error in payment process", error);
             throw error;
           });
       },
     }),
-    [locale, addLog, currency, orderSummary, cartItems, formData, differentBilling]
+    [locale, currency, orderSummary, cartItems, formData, differentBilling]
   )
 
   // Effect to handle Klarna payment button mounting/unmounting - optimized
@@ -624,13 +565,11 @@ export default function CheckoutPayment() {
         await new Promise(resolve => setTimeout(resolve, 2000))
 
         // Handle successful submission
-        addLog("success", "Order Submitted", "Order submitted successfully")
         // Redirect to success page or show success message
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "An error occurred"
       setSubmitError(errorMessage)
-      addLog("error", "Order Submission Error", errorMessage)
     } finally {
       setIsSubmitting(false)
     }
@@ -747,7 +686,7 @@ export default function CheckoutPayment() {
                         <div className="w-9 h-9 flex items-center justify-center flex-shrink-0">
                           {klarnaLoading && <Skeleton className="w-9 h-9 rounded" />}
                           {!klarnaLoading && klarnaPresentation && (
-                            <KlarnaIcon paymentPresentation={klarnaPresentation} onLog={addLog} />
+                            <KlarnaIcon paymentPresentation={klarnaPresentation} />
                           )}
                           {!klarnaLoading && !klarnaPresentation && (
                             <div className="w-9 h-9 bg-muted/50 rounded-sm" />
@@ -759,7 +698,6 @@ export default function CheckoutPayment() {
                             {!klarnaLoading && klarnaPresentation && (
                               <KlarnaHeader
                                 paymentPresentation={klarnaPresentation}
-                                onLog={addLog}
                               />
                             )}
                           </div>
@@ -768,7 +706,6 @@ export default function CheckoutPayment() {
                             {!klarnaLoading && klarnaPresentation && (
                               <KlarnaShortSubheader
                                 paymentPresentation={klarnaPresentation}
-                                onLog={addLog}
                               />
                             )}
                           </div>
@@ -788,7 +725,6 @@ export default function CheckoutPayment() {
                       {!klarnaLoading && klarnaPresentation && (
                         <KlarnaEnrichedSubheader
                           paymentPresentation={klarnaPresentation}
-                          onLog={addLog}
                         />
                       )}
                     </div>
@@ -1293,9 +1229,6 @@ export default function CheckoutPayment() {
           </div>
         </div>
       </form>
-
-      {/* Klarna Debug Console */}
-      <KlarnaDebugAlert logs={logs} onClearLogs={clearLogs} className="border-primary/20" />
     </div>
   )
 }
