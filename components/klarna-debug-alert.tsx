@@ -35,8 +35,16 @@ interface KlarnaDebugAlertProps {
 }
 
 export function KlarnaDebugAlert({ logs, onClearLogs, className }: KlarnaDebugAlertProps) {
-  const [isVisible, setIsVisible] = useState(true)
-  const [expandedLogs, setExpandedLogs] = useState<Set<string>>(new Set())
+  const [isVisible, setIsVisible] = useState(true);
+  const [expandedLogs, setExpandedLogs] = useState<Set<string>>(new Set());
+
+  const filteredLogs = logs.filter(
+    (log) =>
+      log.title.includes("API") ||
+      log.title.includes("SDK") ||
+      log.title.includes("Presentation") ||
+      log.title.includes("Component")
+  );
 
   const getIcon = (type: KlarnaLogEntry["type"]) => {
     switch (type) {
@@ -129,7 +137,7 @@ export function KlarnaDebugAlert({ logs, onClearLogs, className }: KlarnaDebugAl
           </div>
           <div className="flex items-center gap-1">
             <Badge variant="outline" className="text-xs">
-              {logs.length} events
+              {filteredLogs.length} events
             </Badge>
             <Button
               onClick={onClearLogs}
@@ -155,7 +163,7 @@ export function KlarnaDebugAlert({ logs, onClearLogs, className }: KlarnaDebugAl
       <CardContent className="pt-0">
         <ScrollArea className="h-80">
           <div className="space-y-3">
-            {logs.length === 0 ? (
+            {filteredLogs.length === 0 ? (
               <Alert>
                 <Info className="h-4 w-4" />
                 <AlertTitle>No Klarna SDK activity yet</AlertTitle>
@@ -164,7 +172,7 @@ export function KlarnaDebugAlert({ logs, onClearLogs, className }: KlarnaDebugAl
                 </AlertDescription>
               </Alert>
             ) : (
-              logs.map((log, index) => (
+              filteredLogs.map((log, index) => (
                 <div key={log.id}>
                   <Alert
                     variant={getAlertVariant(log.type)}
@@ -195,319 +203,17 @@ export function KlarnaDebugAlert({ logs, onClearLogs, className }: KlarnaDebugAl
                               <Code2 className="h-3 w-3" />
                               <span className="text-xs font-medium">Data:</span>
                             </div>
-                            {/* Enhanced display for presentation data */}
-                            {log.title.includes("Presentation") && log.data.presentationKeys ? (
-                              <div className="space-y-2">
-                                {log.data.instruction && (
-                                  <div className="text-xs">
-                                    <span className="font-medium text-blue-600">
-                                      🎯 Instruction:
-                                    </span>
-                                    <Badge variant="outline" className="ml-1 text-xs">
-                                      {log.data.instruction}
-                                    </Badge>
-                                  </div>
-                                )}
-
-                                <div className="grid grid-cols-2 gap-1 text-xs">
-                                  <div className="flex items-center gap-1">
-                                    <span className="text-green-600">🖼️</span>
-                                    <span
-                                      className={
-                                        log.data.hasIcon ? "text-green-600" : "text-red-500"
-                                      }
-                                    >
-                                      Icon: {log.data.hasIcon ? "✓" : "✗"}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <span className="text-blue-600">📰</span>
-                                    <span
-                                      className={
-                                        log.data.hasHeader ? "text-green-600" : "text-red-500"
-                                      }
-                                    >
-                                      Header: {log.data.hasHeader ? "✓" : "✗"}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <span className="text-purple-600">📝</span>
-                                    <span
-                                      className={
-                                        log.data.hasShortSubheader
-                                          ? "text-green-600"
-                                          : "text-red-500"
-                                      }
-                                    >
-                                      Short: {log.data.hasShortSubheader ? "✓" : "✗"}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <span className="text-purple-600">📝</span>
-                                    <span
-                                      className={
-                                        log.data.hasEnrichedSubheader
-                                          ? "text-green-600"
-                                          : "text-red-500"
-                                      }
-                                    >
-                                      Enriched: {log.data.hasEnrichedSubheader ? "✓" : "✗"}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-1 col-span-2">
-                                    <span className="text-orange-600">🔘</span>
-                                    <span
-                                      className={
-                                        log.data.hasPaymentButton
-                                          ? "text-green-600"
-                                          : "text-red-500"
-                                      }
-                                    >
-                                      Payment Button: {log.data.hasPaymentButton ? "✓" : "✗"}
-                                    </span>
-                                  </div>
-                                </div>
-
-                                {log.data.presentationKeys && (
-                                  <div className="text-xs">
-                                    <span className="font-medium">Available Keys:</span>
-                                    <div className="flex flex-wrap gap-1 mt-1">
-                                      {log.data.presentationKeys.map((key: string) => (
-                                        <Badge key={key} variant="secondary" className="text-xs">
-                                          {key}
-                                        </Badge>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            ) : log.title.includes("SDK Structure") && log.data.availableMethods ? (
-                              /* Enhanced display for SDK structure */
-                              <div className="space-y-2">
-                                <div className="text-xs font-medium text-blue-600">
-                                  🔍 SDK Methods Analysis:
-                                </div>
-                                <div className="space-y-1 max-h-32 overflow-y-auto">
-                                  {log.data.availableMethods.map((method: any, index: number) => (
-                                    <div
-                                      key={index}
-                                      className="text-xs p-1 bg-background rounded border"
-                                    >
-                                      <div className="flex items-center justify-between">
-                                        <span className="font-medium">{method.key}</span>
-                                        <div className="flex gap-1">
-                                          <Badge
-                                            variant={method.isFunction ? "default" : "secondary"}
-                                            className="text-xs"
-                                          >
-                                            {method.type}
-                                          </Badge>
-                                          {method.isFunction && (
-                                            <Badge variant="outline" className="text-xs">
-                                              function
-                                            </Badge>
-                                          )}
-                                        </div>
-                                      </div>
-                                      {method.hasNestedMethods &&
-                                        method.hasNestedMethods.length > 0 && (
-                                          <div className="mt-1 flex flex-wrap gap-1">
-                                            {method.hasNestedMethods
-                                              .slice(0, 3)
-                                              .map((nestedMethod: string) => (
-                                                <Badge
-                                                  key={nestedMethod}
-                                                  variant="outline"
-                                                  className="text-xs"
-                                                >
-                                                  .{nestedMethod}
-                                                </Badge>
-                                              ))}
-                                            {method.hasNestedMethods.length > 3 && (
-                                              <Badge variant="outline" className="text-xs">
-                                                +{method.hasNestedMethods.length - 3} more
-                                              </Badge>
-                                            )}
-                                          </div>
-                                        )}
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            ) : log.title.includes("SDK Initialized") &&
-                              log.data.availableMethods ? (
-                              /* Enhanced display for SDK initialization */
-                              <div className="space-y-2">
-                                <div className="grid grid-cols-2 gap-2 text-xs">
-                                  <div className="flex items-center gap-1">
-                                    <span className="text-green-600">📦</span>
-                                    <span>SDK Type: {log.data.sdkType}</span>
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <span className="text-blue-600">💳</span>
-                                    <span
-                                      className={
-                                        log.data.hasPaymentMethod
-                                          ? "text-green-600"
-                                          : "text-red-500"
-                                      }
-                                    >
-                                      Payment: {log.data.hasPaymentMethod ? "✓" : "✗"}
-                                    </span>
-                                  </div>
-                                </div>
-
-                                {log.data.availableMethods &&
-                                  log.data.availableMethods.length > 0 && (
-                                    <div className="text-xs">
-                                      <span className="font-medium">Available Methods:</span>
-                                      <div className="flex flex-wrap gap-1 mt-1">
-                                        {log.data.availableMethods.map((method: string) => (
-                                          <Badge
-                                            key={method}
-                                            variant="secondary"
-                                            className="text-xs"
-                                          >
-                                            {method}
-                                          </Badge>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  )}
-                              </div>
-                            ) : log.title.includes("API Request") ? (
-                              /* Enhanced display for API requests */
-                              <div className="space-y-2">
-                                <div className="text-xs font-medium text-blue-600">
-                                  🌐 API Request Details:
-                                </div>
-                                {log.data.url && (
-                                  <div className="text-xs">
-                                    <span className="font-medium">URL:</span>
-                                    <Badge variant="outline" className="ml-1 text-xs">
-                                      {log.data.url}
-                                    </Badge>
-                                  </div>
-                                )}
-                                {log.data.method && (
-                                  <div className="text-xs">
-                                    <span className="font-medium">Method:</span>
-                                    <Badge variant="secondary" className="ml-1 text-xs">
-                                      {log.data.method}
-                                    </Badge>
-                                  </div>
-                                )}
-                                {log.data.requestSize && (
-                                  <div className="text-xs">
-                                    <span className="font-medium">Request Size:</span>
-                                    <span className="ml-1">{log.data.requestSize} bytes</span>
-                                  </div>
-                                )}
-                              </div>
-                            ) : log.title.includes("API Response") ? (
-                              /* Enhanced display for API responses */
-                              <div className="space-y-2">
-                                <div className="text-xs font-medium text-green-600">
-                                  📡 API Response Details:
-                                </div>
-                                <div className="grid grid-cols-2 gap-2 text-xs">
-                                  {log.data.status && (
-                                    <div className="flex items-center gap-1">
-                                      <span className="text-blue-600">📊</span>
-                                      <span>Status: {log.data.status}</span>
-                                    </div>
-                                  )}
-                                  {log.data.responseSize && (
-                                    <div className="flex items-center gap-1">
-                                      <span className="text-green-600">📏</span>
-                                      <span>Size: {log.data.responseSize} bytes</span>
-                                    </div>
-                                  )}
-                                  {log.data.responseTime && (
-                                    <div className="flex items-center gap-1">
-                                      <span className="text-purple-600">⏱️</span>
-                                      <span>Time: {log.data.responseTime}ms</span>
-                                    </div>
-                                  )}
-                                  {log.data.result && (
-                                    <div className="flex items-center gap-1">
-                                      <span className="text-orange-600">🎯</span>
-                                      <span>Result: {log.data.result}</span>
-                                    </div>
-                                  )}
-                                </div>
-                                {log.data.paymentRequestId && (
-                                  <div className="text-xs">
-                                    <span className="font-medium">Payment Request ID:</span>
-                                    <Badge variant="outline" className="ml-1 text-xs">
-                                      {log.data.paymentRequestId}
-                                    </Badge>
-                                  </div>
-                                )}
-                              </div>
-                            ) : log.title.includes("Component") && log.data.componentKeys ? (
-                              /* Enhanced display for component analysis */
-                              <div className="space-y-2">
-                                <div className="text-xs font-medium text-purple-600">
-                                  🧩 Component Analysis:
-                                </div>
-                                <div className="grid grid-cols-2 gap-2 text-xs">
-                                  <div className="flex items-center gap-1">
-                                    <span className="text-blue-600">📦</span>
-                                    <span>Type: {log.data.componentType}</span>
-                                  </div>
-                                  <div className="flex items-center gap-1">
-                                    <span className="text-green-600">🔧</span>
-                                    <span
-                                      className={
-                                        log.data.hasMount ? "text-green-600" : "text-red-500"
-                                      }
-                                    >
-                                      Mount: {log.data.hasMount ? "✓" : "✗"}
-                                    </span>
-                                  </div>
-                                  {log.data.hasHtmlElement !== undefined && (
-                                    <div className="flex items-center gap-1 col-span-2">
-                                      <span className="text-purple-600">🌐</span>
-                                      <span
-                                        className={
-                                          log.data.hasHtmlElement
-                                            ? "text-green-600"
-                                            : "text-red-500"
-                                        }
-                                      >
-                                        HTML Element: {log.data.hasHtmlElement ? "✓" : "✗"}
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-                                {log.data.componentKeys && log.data.componentKeys.length > 0 && (
-                                  <div className="text-xs">
-                                    <span className="font-medium">Available Properties:</span>
-                                    <div className="flex flex-wrap gap-1 mt-1">
-                                      {log.data.componentKeys.map((key: string) => (
-                                        <Badge key={key} variant="secondary" className="text-xs">
-                                          {key}
-                                        </Badge>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            ) : (
-                              /* Default display for other data */
-                              <pre className="text-xs text-muted-foreground whitespace-pre-wrap break-all max-h-32 overflow-y-auto">
-                                {typeof log.data === "string"
-                                  ? log.data
-                                  : JSON.stringify(log.data, null, 2)}
-                              </pre>
-                            )}
+                            <pre className="text-xs text-muted-foreground whitespace-pre-wrap break-all max-h-32 overflow-y-auto">
+                              {typeof log.data === "string"
+                                ? log.data
+                                : JSON.stringify(log.data, null, 2)}
+                            </pre>
                           </div>
                         )}
                       </div>
                     </div>
                   </Alert>
-                  {index < logs.length - 1 && <Separator className="my-2" />}
+                  {index < filteredLogs.length - 1 && <Separator className="my-2" />}
                 </div>
               ))
             )}

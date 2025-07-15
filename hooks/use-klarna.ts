@@ -55,18 +55,13 @@ class KlarnaSDKManager {
     message: string,
     data?: any
   ) {
-    // Log to all registered loggers
-    this.loggers.forEach(logger => {
+    this.loggers.forEach((logger) => {
       try {
-        logger(type, title, message, data)
+        logger(type, title, message, data);
       } catch (e) {
         // Ignore logger errors
       }
-    })
-
-    // Fallback to console
-    const consoleMethod = type === "error" ? "error" : type === "warning" ? "warn" : "log"
-    console[consoleMethod](`[Klarna SDK Manager] ${title}: ${message}`, data || "")
+    });
   }
 
   async loadSDK(locale: string = "en-US"): Promise<any> {
@@ -321,7 +316,6 @@ export function useKlarna({
 
   const manager = KlarnaSDKManager.getInstance()
 
-  // Memoized log function
   const log = useCallback(
     (
       type: "info" | "success" | "warning" | "error",
@@ -329,35 +323,25 @@ export function useKlarna({
       message: string,
       data?: any
     ) => {
-      if (onLog) {
-        onLog(type, title, message, data)
-      }
+      // No-op
     },
-    [onLog]
-  )
+    []
+  );
 
-  // Load SDK
   const loadSDK = useCallback(async () => {
     try {
-      setIsLoading(true)
-      setError(null)
+      setIsLoading(true);
+      setError(null);
 
-      const sdk = await manager.loadSDK(locale)
-      setKlarnaSDK(sdk)
-
-      // Get presentation
-      if (amount > 0) {
-        const presentation = await manager.getPresentation(amount, currency, locale)
-        setKlarnaPresentation(presentation)
-      }
+      const sdk = await manager.loadSDK(locale);
+      setKlarnaSDK(sdk);
     } catch (err) {
-      const error = err as Error
-      setError(error)
-      log("error", "SDK Load Error", error.message, error)
+      const error = err as Error;
+      setError(error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }, [amount, currency, locale, manager, log])
+  }, [locale, manager]);
 
   // Update presentation when amount/currency/locale changes
   const updatePresentation = useCallback(async () => {
@@ -382,13 +366,16 @@ export function useKlarna({
     loadSDK()
   }, [loadSDK, log])
 
-  // Register logger with manager
   useEffect(() => {
-    manager.addLogger(log)
-    return () => {
-      manager.removeLogger(log)
+    if (onLog) {
+      manager.addLogger(onLog);
     }
-  }, [manager, log])
+    return () => {
+      if (onLog) {
+        manager.removeLogger(onLog);
+      }
+    };
+  }, [manager, onLog]);
 
   // Load SDK on mount
   useEffect(() => {

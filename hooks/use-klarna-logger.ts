@@ -25,9 +25,7 @@ export function useKlarnaLogger(): UseKlarnaLoggerReturn {
 
       setLogs(prev => [...prev, newLog])
 
-      // Also log to console for development
-      const consoleMethod = type === "error" ? "error" : type === "warning" ? "warn" : "log"
-      console[consoleMethod](`[Klarna SDK] ${title}: ${message}`, data || "")
+      // The KlarnaSDKManager will log to the console, so we don't need to do it here.
     },
     []
   )

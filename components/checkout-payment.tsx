@@ -63,7 +63,6 @@ const KlarnaComponent = ({
     return path.split(".").reduce((current, key) => current?.[key], obj)
   }
 
-  // Stable logging function that doesn't cause re-renders
   const logInfo = useCallback(
     (
       type: "info" | "success" | "warning" | "error",
@@ -71,106 +70,93 @@ const KlarnaComponent = ({
       message: string,
       data?: any
     ) => {
-      console.log(`[${componentName}] ${title}: ${message}`, data || "")
-      onLog?.(type, title, message, data)
+      onLog?.(type, title, message, data);
     },
-    [componentName, onLog]
-  )
+    [onLog]
+  );
 
   // Removed visibility observer - all components now mount when SDK is ready
 
-  // Consolidated mounting effect - handles SDK readiness
   useEffect(() => {
-    // Reset mount attempt flag when dependencies change
-    mountAttempted.current = false
-
-    // All components now mount when SDK is ready (no special visibility logic)
+    mountAttempted.current = false;
 
     if (!paymentPresentation) {
-      logInfo("info", `${componentName} Mount Skipped`, "Payment presentation not available")
-      return
+      logInfo("info", `${componentName} Mount Skipped`, "Payment presentation not available");
+      return;
     }
 
     if (!containerRef.current) {
-      logInfo("info", `${componentName} Mount Skipped`, "Container ref not available")
-      return
+      logInfo("info", `${componentName} Mount Skipped`, "Container ref not available");
+      return;
     }
 
     if (mountAttempted.current) {
-      logInfo("info", `${componentName} Mount Skipped`, "Mount already attempted")
-      return
+      logInfo("info", `${componentName} Mount Skipped`, "Mount already attempted");
+      return;
     }
 
-    const component = getComponent(paymentPresentation, componentPath)
+    const component = getComponent(paymentPresentation, componentPath);
     if (!component) {
-      logInfo("warning", `${componentName} Mount`, "Component not available in presentation")
-      return
+      logInfo("warning", `${componentName} Mount`, "Component not available in presentation");
+      return;
     }
 
-    // Clean up existing component first
     if (componentRef.current) {
       try {
-        componentRef.current.unmount()
-        componentRef.current = null
+        componentRef.current.unmount();
+        componentRef.current = null;
       } catch (error) {
-        console.log(`❌ [${componentName}] Error unmounting:`, error)
+        logInfo("error", `${componentName} Unmount Error`, "Failed to unmount component", error);
       }
     }
 
-    // Mount component
-    logInfo("info", `${componentName} Mount`, "Attempting to mount component")
+    logInfo("info", `${componentName} Mount`, "Attempting to mount component");
 
     try {
-      mountAttempted.current = true
-
-      // Clear container first
-      containerRef.current.innerHTML = ""
-
-      // Create and mount component
-      const componentInstance = component()
-      logInfo("info", `${componentName} Created`, "Component instance created")
+      mountAttempted.current = true;
+      containerRef.current.innerHTML = "";
+      const componentInstance = component();
+      logInfo("info", `${componentName} Created`, "Component instance created");
 
       if (componentInstance.mount) {
-        componentInstance.mount(`#${containerId}`)
-        logInfo("success", `${componentName} Mounted`, "Mounted via mount method")
+        componentInstance.mount(`#${containerId}`);
+        logInfo("success", `${componentName} Mounted`, "Mounted via mount method");
       } else if (componentInstance.htmlElement) {
-        containerRef.current.appendChild(componentInstance.htmlElement)
-        logInfo("success", `${componentName} Mounted`, "Mounted via htmlElement")
+        containerRef.current.appendChild(componentInstance.htmlElement);
+        logInfo("success", `${componentName} Mounted`, "Mounted via htmlElement");
 
-        // Create compatible unmount method
-        const originalUnmount = componentInstance.unmount
+        const originalUnmount = componentInstance.unmount;
         componentInstance.unmount = () => {
           try {
             if (componentInstance.htmlElement?.parentNode) {
-              componentInstance.htmlElement.parentNode.removeChild(componentInstance.htmlElement)
+              componentInstance.htmlElement.parentNode.removeChild(componentInstance.htmlElement);
             }
-            originalUnmount?.call(componentInstance)
+            originalUnmount?.call(componentInstance);
           } catch (error) {
-            console.log(`❌ [${componentName}] Error in custom unmount:`, error)
+            logInfo("error", `${componentName} Custom Unmount Error`, "Failed to unmount component", error);
           }
-        }
+        };
       } else {
-        throw new Error(`Component has neither mount method nor htmlElement property`)
+        throw new Error("Component has neither mount method nor htmlElement property");
       }
 
-      componentRef.current = componentInstance
+      componentRef.current = componentInstance;
     } catch (error) {
-      mountAttempted.current = false
-      logInfo("error", `${componentName} Error`, "Failed to mount component", error)
+      mountAttempted.current = false;
+      logInfo("error", `${componentName} Error`, "Failed to mount component", error);
     }
 
-    // Cleanup on unmount
     return () => {
       if (componentRef.current) {
         try {
-          componentRef.current.unmount()
-          componentRef.current = null
+          componentRef.current.unmount();
+          componentRef.current = null;
         } catch (error) {
-          console.log(`❌ [${componentName}] Error during cleanup:`, error)
+          logInfo("error", `${componentName} Cleanup Error`, "Failed to unmount component", error);
         }
       }
-    }
-  }, [componentName, componentPath, containerId, paymentPresentation, logInfo])
+    };
+  }, [componentName, componentPath, containerId, paymentPresentation, logInfo]);
 
   return <div id={containerId} ref={containerRef} className={className} />
 }
@@ -510,7 +496,6 @@ export default function CheckoutPayment() {
           useDifferentBilling,
         }
         const requestBody = JSON.stringify(payload)
-        const requestStartTime = performance.now()
 
         addLog("info", "API Request", "Sending payment authorization request", {
           url: "/api/klarna-authorize",
@@ -524,62 +509,38 @@ export default function CheckoutPayment() {
           headers: { "Content-Type": "application/json" },
           body: requestBody,
         })
-          .then(response => {
-            const responseTime = Math.round(performance.now() - requestStartTime)
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.error) {
+              addLog("error", "API Error", data.error, data.details);
+              throw new Error(data.error);
+            }
 
-            addLog("info", "API Response", "API response received", {
-              status: response.status,
-              statusText: response.statusText,
-              responseTime: responseTime,
-              headers: Object.fromEntries(response.headers.entries()),
-            })
+            addLog("success", "API Response", "Klarna authorization successful", data);
 
-            return response.json()
-          })
-          .then(data => {
-            const responseTime = Math.round(performance.now() - requestStartTime)
-
-            addLog("info", "Backend Response", "Backend response parsed", {
-              ...data,
-              responseTime: responseTime,
-              responseSize: new Blob([JSON.stringify(data)]).size,
-              result: data?.payment_transaction_response?.result,
-              paymentRequestId: data?.payment_request?.payment_request_id,
-            })
-
-            // Handle Step Up Required
             if (
               data?.payment_transaction_response?.result === "STEP_UP_REQUIRED" &&
               data?.payment_request?.payment_request_id
             ) {
-              addLog("info", "Step Up Required", "Additional authentication required", {
-                paymentRequestId: data.payment_request.payment_request_id,
-              })
-              return { paymentRequestId: data.payment_request.payment_request_id }
+              return { paymentRequestId: data.payment_request.payment_request_id };
             }
 
-            // Handle Approved
             if (data?.payment_transaction_response?.result === "APPROVED") {
-              addLog("success", "Payment Approved", "Payment approved, redirecting")
-              window.location.href = "/confirmation"
-              return {}
+              window.location.href = "/confirmation";
+              return {};
             }
 
-            // Handle Declined
             if (data?.payment_transaction_response?.result === "DECLINED") {
-              addLog("warning", "Payment Declined", "Payment declined, redirecting")
-              window.location.href = "/failure"
-              return {}
+              window.location.href = "/failure";
+              return {};
             }
 
-            // Handle unexpected response
-            addLog("error", "Unexpected Response", "Unexpected result", data)
-            throw new Error("Unexpected payment result")
+            throw new Error("Unexpected payment result");
           })
-          .catch(error => {
-            addLog("error", "Payment Error", "Error in payment process", error)
-            throw error
-          })
+          .catch((error) => {
+            addLog("error", "Payment Error", "Error in payment process", error);
+            throw error;
+          });
       },
     }),
     [locale, addLog, currency, orderSummary, cartItems, formData, differentBilling]
