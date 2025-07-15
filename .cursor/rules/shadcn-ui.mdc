@@ -1,0 +1,6 @@
+---
+alwaysApply: true
+priority: 2
+---
+# UI Library Usage
+This project uses [shadcn UI](https://ui.shadcn.com/) for its component library. When building or updating UI components, prefer using or extending shadcn UI components for consistency and maintainability.

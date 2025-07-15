@@ -1,0 +1,20 @@
+---
+alwaysApply: true
+priority: 3
+---
+# Deployment and CI/CD
+This project is intended to run on [Vercel](https://vercel.com/) and is connected to GitHub for continuous deployment. Ensure that all code changes are pushed to GitHub to trigger Vercel deployments. Configuration files for Vercel and GitHub Actions (if any) should be kept up to date.
+
+## Local Development vs Vercel Deployment
+- **Local Development**: Uses company registry automatically through network configuration
+- **Vercel Deployment**: Uses public npm registry (company-specific files excluded via `.vercelignore`)
+- `.vercelignore` file excludes: `.npmrc`, `pnpm-lock.yaml`, `node_modules/`, local env files
+- This allows local development with company dependencies while Vercel deploys from public registry
+
+## Running Locally
+Use standard Next.js development commands:
+```bash
+pnpm dev    # Start development server
+pnpm build  # Build for production
+pnpm lint   # Run linting
+```

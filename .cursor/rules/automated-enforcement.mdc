@@ -1,0 +1,43 @@
+---
+# Automated Rule Enforcement
+
+## Rule Application Priority
+When developing new features or fixing bugs, ALWAYS apply these rules in this order:
+1. **Project Purpose** - Ensure alignment with ecommerce payment demo goals
+2. **Development Guidelines** - Follow code organization and naming conventions
+3. **Code Quality** - Apply linting, formatting, and consistency rules
+4. **TypeScript/React** - Implement proper typing and React patterns
+5. **Testing/Errors** - Add appropriate error handling and tests
+6. **UI Library** - Use shadcn UI components consistently
+7. **Deployment** - Ensure Vercel compatibility
+
+## Automatic Rule Checking
+Before any code suggestion or implementation:
+- ✅ Check if the change aligns with project's ecommerce payment focus
+- ✅ Verify proper TypeScript typing is used
+- ✅ Ensure shadcn UI components are preferred over custom implementations
+- ✅ Confirm proper error handling is implemented
+- ✅ Validate accessibility requirements are met
+- ✅ Check that naming conventions are followed
+- ✅ Ensure proper import organization
+
+## New Feature Requirements
+Every new feature MUST include:
+- Proper TypeScript interfaces in `types/index.ts`
+- Error boundaries and loading states
+- Accessibility attributes (ARIA labels, semantic HTML)
+- Responsive design using Tailwind CSS
+- Integration with existing payment flow context
+- Form validation where applicable
+- Proper state management patterns
+
+## Code Review Checklist
+Before accepting any code changes, verify:
+- [ ] All ESLint rules pass (`pnpm lint`)
+- [ ] TypeScript compilation succeeds
+- [ ] Component uses shadcn UI where possible
+- [ ] Proper error handling implemented
+- [ ] Accessibility standards met
+- [ ] Mobile responsiveness confirmed
+- [ ] Payment flow integration maintained
+- [ ] No security vulnerabilities introduced

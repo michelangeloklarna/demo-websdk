@@ -1,0 +1,6 @@
+---
+alwaysApply: true
+priority: 0
+---
+# Project Purpose
+This project is a demo application focused on showcasing ecommerce payment method integrations. All features, components, and flows should be designed to demonstrate payment-related functionality in an ecommerce context.

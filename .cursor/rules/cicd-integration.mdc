@@ -1,0 +1,91 @@
+---
+alwaysApply: true
+---
+# CI/CD and Pre-commit Integration
+
+## Pre-commit Hooks Setup
+For optimal rule enforcement, configure these pre-commit hooks:
+
+```bash
+# Install husky for git hooks
+pnpm add -D husky
+
+# Add pre-commit script to package.json
+{
+  "scripts": {
+    "pre-commit": "pnpm lint && pnpm type-check"
+  }
+}
+```
+
+## Vercel Build Configuration
+Ensure these build steps are included in deployment:
+
+```javascript
+// next.config.mjs
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  eslint: {
+    // Don't ignore ESLint errors during build
+    ignoreDuringBuilds: false,
+  },
+  typescript: {
+    // Don't ignore TypeScript errors during build
+    ignoreBuildErrors: false,
+  },
+}
+```
+
+## GitHub Actions Integration
+For automatic rule validation, add `.github/workflows/validate.yml`:
+
+```yaml
+name: Validate Code Quality
+on: [push, pull_request]
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - run: pnpm install
+      - run: pnpm lint
+      - run: pnpm type-check
+      - run: pnpm build
+```
+
+## Rule Validation Commands
+Add these scripts to package.json for comprehensive validation:
+
+```json
+{
+  "scripts": {
+    "validate": "pnpm lint && pnpm type-check && pnpm build",
+    "type-check": "tsc --noEmit",
+    "lint:fix": "next lint --fix"
+  }
+}
+```
+
+## Automatic Rule Application
+These rules will be automatically applied when:
+- Creating new components or pages
+- Modifying existing TypeScript/React code
+- Adding new features or functionality
+- Refactoring existing code
+- Importing or using external libraries
+
+## IDE Integration
+Configure VS Code settings for automatic rule enforcement:
+
+```json
+{
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true
+  },
+  "typescript.preferences.importModuleSpecifier": "non-relative"
+}
+```

@@ -1,0 +1,44 @@
+---
+alwaysApply: true
+---
+# Code Quality and Consistency
+
+## Code Style
+- Use 2 spaces for indentation
+- Use semicolons consistently
+- Use double quotes for strings
+- Use trailing commas in objects and arrays
+- Follow Prettier formatting rules
+
+## ESLint Rules
+- Run `pnpm lint` before committing
+- Fix all linting errors and warnings
+- Use ESLint disable comments sparingly and with justification
+- Follow Next.js ESLint configuration
+
+## Import Organization
+- Group imports in this order:
+  1. React and Next.js imports
+  2. Third-party library imports
+  3. Internal imports (components, utils, types)
+  4. Relative imports
+- Sort imports alphabetically within each group
+- Use absolute imports with `@/` prefix
+
+## Variable and Function Naming
+- Use descriptive names that explain purpose
+- Avoid abbreviations unless they're well-known
+- Use boolean prefixes: `isLoading`, `hasError`, `canSubmit`
+- Use verb + noun for functions: `calculateTotal`, `validateForm`
+
+## Comments and Documentation
+- Write comments for complex business logic
+- Use JSDoc for exported functions and components
+- Explain "why" not "what" in comments
+- Keep comments up to date with code changes
+
+## Git Practices
+- Write clear, descriptive commit messages
+- Use conventional commit format: `feat:`, `fix:`, `docs:`, etc.
+- Keep commits focused and atomic
+- Squash related commits before merging

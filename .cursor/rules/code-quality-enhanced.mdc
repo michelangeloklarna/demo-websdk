@@ -1,0 +1,48 @@
+---
+alwaysApply: true
+priority: 1
+---
+# Enhanced Code Quality Standards
+
+## Development Quality Gates
+Before any code is written or modified, ensure:
+- [ ] TypeScript compilation passes (`pnpm type-check`)
+- [ ] ESLint rules are followed (`pnpm lint`)
+- [ ] Code is properly formatted (`pnpm format`)
+- [ ] All imports use absolute paths with `@/` prefix
+- [ ] Components are wrapped in ErrorBoundary where appropriate
+
+## Component Development Standards
+- Use custom hooks for complex state logic (e.g., `useKlarna`, `useCheckout`)
+- Implement proper error boundaries for components that might fail
+- Use Zod schemas for all form validation
+- Prefer composition over large monolithic components
+- Always include proper TypeScript types - no `any` types allowed
+
+## Error Handling Requirements
+- All async operations must have proper error handling
+- User-facing errors should be meaningful and actionable
+- Console errors should include context for debugging
+- Components should gracefully handle loading and error states
+- Use ErrorBoundary for unexpected errors
+
+## Security Standards
+- Never expose sensitive data in client-side code
+- Use proper environment variables for configuration
+- Validate all user inputs with Zod schemas
+- Implement CSP headers for XSS protection
+- Sanitize dynamic content before rendering
+
+## Performance Requirements
+- Use React.memo for expensive components
+- Implement proper loading states for better UX
+- Use dynamic imports for code splitting when appropriate
+- Optimize images and assets
+- Monitor bundle size and performance metrics
+
+## Testing Standards
+- Write unit tests for utility functions
+- Test error scenarios and edge cases
+- Mock external dependencies (like Klarna SDK)
+- Test accessibility features
+- Validate form submissions and error states

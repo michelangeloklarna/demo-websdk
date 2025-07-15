@@ -1,0 +1,60 @@
+---
+alwaysApply: true
+priority: 0
+---
+# Feature Development Checklist
+
+## Before Writing Any Code
+- [ ] Verify feature aligns with ecommerce payment demo purpose
+- [ ] Check if shadcn UI components can be used/extended
+- [ ] Define TypeScript interfaces in `types/index.ts`
+- [ ] Plan responsive design approach
+- [ ] Consider accessibility requirements (ARIA, keyboard navigation)
+
+## During Development
+- [ ] Use `@/` imports for internal modules
+- [ ] Import shadcn UI components from `@/components/ui/`
+- [ ] Add proper TypeScript typing (no `any` types)
+- [ ] Implement loading states for async operations
+- [ ] Add error handling with user-friendly messages
+- [ ] Include form validation where applicable
+- [ ] Use semantic HTML elements
+- [ ] Add ARIA labels and descriptions
+
+## Code Quality Checks
+- [ ] Run `pnpm lint` and fix all issues
+- [ ] Ensure TypeScript compilation passes
+- [ ] Test responsive design on mobile/tablet/desktop
+- [ ] Verify keyboard navigation works
+- [ ] Check color contrast for accessibility
+- [ ] Test with screen reader (if possible)
+
+## Integration Verification
+- [ ] Component works with existing payment flow
+- [ ] State management follows established patterns
+- [ ] No breaking changes to existing functionality
+- [ ] New types are properly exported
+- [ ] Component is properly documented
+
+## Before Committing
+- [ ] All linting rules pass
+- [ ] TypeScript compilation successful
+- [ ] Component renders correctly across breakpoints
+- [ ] No console errors or warnings
+- [ ] Git commit follows conventional format
+- [ ] Code follows established naming conventions
+
+## Post-Development
+- [ ] Update CLAUDE.md if architectural changes made
+- [ ] Add component to appropriate documentation
+- [ ] Consider adding to component library showcase
+- [ ] Test deployment on Vercel (if applicable)
+
+## Common Patterns to Follow
+- Payment method selection components
+- Form validation and error states
+- Loading spinners and skeleton screens
+- Responsive card layouts
+- Accessible form inputs with labels
+- Proper error boundaries
+- Consistent spacing using Tailwind classes

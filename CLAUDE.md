@@ -18,6 +18,8 @@ This is a demo ecommerce checkout application built with Next.js 15, React 19, a
 - `pnpm type-check` - Run TypeScript type checking
 - `pnpm validate` - Run all quality checks (type-check + lint + format)
 
+Note: This project uses pnpm as the package manager. Always use pnpm for dependency management.
+
 ## Quality Gates
 
 Before making changes, always run:
@@ -73,6 +75,11 @@ The checkout supports four payment methods defined in `lib/constants.ts:30`:
 - Implement proper error boundaries
 - Use Zod schemas for all form validation
 - Follow ESLint and Prettier configurations
+- Use 2 spaces for indentation, double quotes for strings
+- Use absolute imports with `@/` prefix for clean import paths
+- Follow kebab-case for files: `checkout-payment.tsx`
+- Use PascalCase for components: `CheckoutPayment`
+- Use camelCase for functions: `calculateOrderSummary`
 
 ### Component Architecture
 
@@ -85,9 +92,12 @@ The checkout supports four payment methods defined in `lib/constants.ts:30`:
 ### Error Handling
 
 - Wrap components in ErrorBoundary where appropriate
-- Implement proper async error handling
+- Implement proper async error handling with try-catch blocks
 - Provide meaningful error messages to users
 - Log errors with context for debugging
+- Implement fallback UI states for error conditions
+- Validate user inputs and API responses
+- Handle network timeouts gracefully
 
 ### Payment Integration Focus
 
@@ -99,6 +109,10 @@ All features should align with demonstrating payment method integrations in an e
 - Use proper environment variables
 - Implement CSP headers for security
 - Optimize for performance with proper loading states
+- Implement skeleton screens for better UX
+- Use React.memo for expensive components
+- Validate all user inputs on both client and server
+- Monitor Core Web Vitals and use Next.js built-in performance monitoring
 
 ### Deployment
 

@@ -1,0 +1,59 @@
+---
+alwaysApply: true
+priority: 1
+---
+# Development Workflow
+
+## Feature Development Process
+When adding any new feature or functionality:
+
+1. **Planning Phase**
+   - Ensure feature aligns with ecommerce payment demo purpose
+   - Define TypeScript interfaces in `types/index.ts`
+   - Plan component structure using shadcn UI components
+   - Consider accessibility requirements from the start
+
+2. **Implementation Phase**
+   - Start with TypeScript interfaces and types
+   - Build components using shadcn UI primitives
+   - Implement proper error handling and loading states
+   - Add form validation where applicable
+   - Include proper ARIA labels and semantic HTML
+
+3. **Validation Phase**
+   - Run `pnpm lint` to check for style issues
+   - Test component functionality and responsiveness
+   - Verify accessibility with keyboard navigation
+   - Check integration with existing payment flow
+
+4. **Documentation Phase**
+   - Add JSDoc comments for exported functions
+   - Update component props documentation
+   - Ensure code is self-documenting with clear naming
+
+## Code Generation Rules
+When Cursor generates code, it MUST:
+- Use existing patterns from the codebase
+- Import from `@/` paths for internal modules
+- Use shadcn UI components from `@/components/ui/`
+- Include proper TypeScript typing
+- Follow the established naming conventions
+- Add error handling for async operations
+- Include accessibility attributes
+
+## Refactoring Guidelines
+When refactoring existing code:
+- Maintain backward compatibility
+- Update related TypeScript interfaces
+- Ensure all imports are updated
+- Run linting after changes
+- Test affected functionality
+- Update documentation if needed
+
+## Integration Requirements
+Every new component or feature must:
+- Work with the existing payment flow context
+- Be responsive across all device sizes
+- Include proper loading and error states
+- Follow the established design system
+- Be accessible via keyboard and screen readers

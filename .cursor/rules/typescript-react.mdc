@@ -1,0 +1,48 @@
+---
+alwaysApply: true
+---
+# TypeScript and React Best Practices
+
+## TypeScript Guidelines
+- Use strict TypeScript configuration
+- Define all types explicitly, avoid `any`
+- Use interfaces for object shapes, types for unions
+- Export types from `types/index.ts` for reusability
+- Use generic types when appropriate
+- Leverage TypeScript's built-in utility types
+
+## React Component Patterns
+- Use functional components with hooks
+- Define component props using interfaces
+- Use React.FC only when necessary (children props)
+- Prefer explicit return type annotations for complex components
+- Use proper key props for lists
+- Implement proper event handler typing
+
+## Hooks Usage
+- Use `useState` with proper type inference
+- Use `useEffect` with proper dependency arrays
+- Use `useMemo` and `useCallback` for performance optimization
+- Custom hooks should start with `use` prefix
+- Extract complex logic into custom hooks
+
+## Form Handling
+- Use controlled components for form inputs
+- Implement proper form validation
+- Use proper HTML form attributes (autocomplete, required, etc.)
+- Handle form submission with proper error states
+- Use proper input types (email, tel, password, etc.)
+
+## Event Handling
+- Use proper event types: `React.FormEvent`, `React.ChangeEvent`
+- Use arrow functions for event handlers in JSX
+- Prevent default behavior when needed
+- Handle async operations in event handlers properly
+
+## Accessibility
+- Use semantic HTML elements
+- Implement proper ARIA attributes
+- Ensure keyboard navigation works
+- Use proper focus management
+- Provide alt text for images
+- Use proper heading hierarchy

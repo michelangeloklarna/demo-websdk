@@ -1,0 +1,34 @@
+---
+# Development Guidelines
+
+## Code Organization
+- Use absolute imports with `@/` prefix for clean import paths
+- Keep related files together: components, types, constants, and utilities
+- Follow Next.js 15 App Router conventions with the `app/` directory
+- Place reusable UI components in `components/ui/` (shadcn)
+- Place business logic components in `components/`
+
+## File Naming
+- Use kebab-case for files and directories: `checkout-payment.tsx`
+- Use PascalCase for React components: `CheckoutPayment`
+- Use camelCase for functions and variables: `calculateOrderSummary`
+- Use UPPER_SNAKE_CASE for constants: `PAYMENT_METHODS`
+
+## Component Structure
+- Use functional components with TypeScript
+- Define prop types using interfaces in `types/index.ts`
+- Use React hooks appropriately (useState, useEffect, useMemo, etc.)
+- Prefer composition over inheritance
+- Keep components focused on a single responsibility
+
+## State Management
+- Use React's built-in state management (useState, useReducer)
+- Lift state up when components need to share data
+- Use useMemo for expensive calculations
+- Consider context for deeply nested prop drilling
+
+## Performance
+- Use React.memo for expensive components
+- Implement proper loading states and error boundaries
+- Optimize images with Next.js Image component
+- Use dynamic imports for code splitting when needed

@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { MOCK_CART_ITEMS, PAYMENT_METHODS } from "@/lib/constants"
 import { COUNTRIES, getCurrencyForLocale, getCountryCodeForLocale } from "@/lib/country-data"
 import { calculateOrderSummary, formatCurrency } from "@/lib/utils"
@@ -30,6 +31,8 @@ import {
   CurrencyLocaleSelector,
   CurrencyLocaleDisplay,
 } from "@/components/currency-locale-selector"
+import { Switch } from "@/components/ui/switch"
+import { ChevronUp, ChevronDown } from "lucide-react"
 
 
 // Generic Klarna Component Wrapper - handles mounting any Klarna presentation component
@@ -271,9 +274,62 @@ interface FormData {
   billingEmail: string
 }
 
+const PAYMENT_METHODS_LIST = [
+  PAYMENT_METHODS.CARD,
+  PAYMENT_METHODS.KLARNA,
+  PAYMENT_METHODS.PAYPAL,
+  PAYMENT_METHODS.BANK,
+]
+
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  [PAYMENT_METHODS.CARD]: "Credit or Debit Card",
+  [PAYMENT_METHODS.KLARNA]: "Klarna",
+  [PAYMENT_METHODS.PAYPAL]: "PayPal",
+  [PAYMENT_METHODS.BANK]: "Bank Transfer",
+}
+
 export default function CheckoutPayment() {
   const router = useRouter()
-  const [paymentMethod, setPaymentMethod] = useState<PaymentData["method"]>(PAYMENT_METHODS.CARD)
+  // --- UX Settings State ---
+  const [hydrated, setHydrated] = useState(false);
+  const [paymentOrder, setPaymentOrder] = useState<string[]>(PAYMENT_METHODS_LIST);
+  const [defaultPayment, setDefaultPayment] = useState<string>(PAYMENT_METHODS.CARD);
+  const [showOtherSubheader, setShowOtherSubheader] = useState(true);
+  const [showKlarnaSubheader, setShowKlarnaSubheader] = useState(true);
+
+  // Hydrate state from localStorage on client only
+  useEffect(() => {
+    const storedOrder = localStorage.getItem("paymentOrder");
+    if (storedOrder) { setPaymentOrder(JSON.parse(storedOrder)); }
+    const storedDefault = localStorage.getItem("defaultPayment");
+    if (storedDefault) { setDefaultPayment(storedDefault); }
+    const storedOther = localStorage.getItem("showOtherSubheader");
+    if (storedOther !== null) { setShowOtherSubheader(storedOther === "true"); }
+    const storedKlarna = localStorage.getItem("showKlarnaSubheader");
+    if (storedKlarna !== null) { setShowKlarnaSubheader(storedKlarna === "true"); }
+    setHydrated(true);
+  }, []);
+
+  // Persist state changes
+  useEffect(() => {
+    if (hydrated) { localStorage.setItem("paymentOrder", JSON.stringify(paymentOrder)); }
+  }, [paymentOrder, hydrated]);
+  useEffect(() => {
+    if (hydrated) { localStorage.setItem("defaultPayment", defaultPayment); }
+  }, [defaultPayment, hydrated]);
+  useEffect(() => {
+    if (hydrated) { localStorage.setItem("showOtherSubheader", showOtherSubheader ? "true" : "false"); }
+  }, [showOtherSubheader, hydrated]);
+  useEffect(() => {
+    if (hydrated) { localStorage.setItem("showKlarnaSubheader", showKlarnaSubheader ? "true" : "false"); }
+  }, [showKlarnaSubheader, hydrated]);
+
+  // --- Main payment method state uses defaultPayment ---
+  const [paymentMethod, setPaymentMethod] = useState<PaymentData["method"]>(defaultPayment as PaymentData["method"])
+  useEffect(() => {
+    setPaymentMethod(defaultPayment as PaymentData["method"])
+  }, [defaultPayment])
+
   const [differentBilling, setDifferentBilling] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -382,6 +438,17 @@ export default function CheckoutPayment() {
     console.log("Shipping address country auto-selected to:", newCountry, "for locale", newLocale)
     console.log("Form data updated with prefilled address data:", prefilledData)
   }, [])
+
+  // --- UX Settings Handlers ---
+  const movePayment = (idx: number, dir: -1 | 1) => {
+    setPaymentOrder((prev) => {
+      const arr = [...prev]
+      const newIdx = idx + dir
+      if (newIdx < 0 || newIdx >= arr.length) { return arr; }
+      ;[arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]]
+      return arr
+    })
+  }
 
   // Note: All Klarna component mounting is now handled by individual wrapper components:
   // KlarnaIcon, KlarnaHeader, KlarnaShortSubheader, and KlarnaEnrichedSubheader
@@ -615,17 +682,99 @@ export default function CheckoutPayment() {
 
       {/* Currency and Locale Selection */}
       <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Region & Currency Settings</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <CurrencyLocaleSelector
-            currency={currency}
-            locale={locale}
-            onCurrencyChange={handleCurrencyChange}
-            onLocaleChange={handleLocaleChange}
-          />
-        </CardContent>
+        <Tabs defaultValue="region-currency" className="w-full">
+          <TabsList className="mb-2">
+            <TabsTrigger value="region-currency">Region & Currency Settings</TabsTrigger>
+            <TabsTrigger value="ux-settings">UX Settings</TabsTrigger>
+          </TabsList>
+          <TabsContent value="region-currency">
+            <CardHeader>
+              <CardTitle>Region & Currency Settings</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CurrencyLocaleSelector
+                currency={currency}
+                locale={locale}
+                onCurrencyChange={handleCurrencyChange}
+                onLocaleChange={handleLocaleChange}
+              />
+            </CardContent>
+          </TabsContent>
+          <TabsContent value="ux-settings">
+            <CardHeader>
+              <CardTitle>UX Settings</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {hydrated && (
+                <div className="md:grid md:grid-cols-2 gap-6 space-y-4 md:space-y-0">
+                  {/* Payment Method Order */}
+                  <div>
+                    <div className="font-medium mb-1 text-base">Payment Method Order</div>
+                    <ul className="space-y-1">
+                      {paymentOrder.map((method, idx) => (
+                        <li key={method} className="flex items-center gap-1 py-1">
+                          <span className="flex-1 text-sm text-foreground/90">{PAYMENT_METHOD_LABELS[method]}</span>
+                          <div className="flex gap-1">
+                            <Button
+                              type="button"
+                              size="icon"
+                              variant="ghost"
+                              className="h-6 w-6"
+                              onClick={() => movePayment(idx, -1)}
+                              disabled={idx === 0}
+                              aria-label="Move up"
+                            >
+                              <ChevronUp className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              type="button"
+                              size="icon"
+                              variant="ghost"
+                              className="h-6 w-6"
+                              onClick={() => movePayment(idx, 1)}
+                              disabled={idx === paymentOrder.length - 1}
+                              aria-label="Move down"
+                            >
+                              <ChevronDown className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  {/* Default Payment Method & Toggles */}
+                  <div className="space-y-4">
+                    <div>
+                      <div className="font-medium mb-1 text-base">Default Payment Method</div>
+                      <Select value={defaultPayment} onValueChange={setDefaultPayment}>
+                        <SelectTrigger className="w-full text-sm h-8">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {paymentOrder.map((method) => (
+                            <SelectItem key={method} value={method} className="text-sm">
+                              {PAYMENT_METHOD_LABELS[method]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex flex-col gap-2 mt-2">
+                      <div className="flex flex-row-reverse justify-between items-center">
+                        <Switch id="other-subheader-toggle" checked={showOtherSubheader} onCheckedChange={setShowOtherSubheader} />
+                        <label htmlFor="other-subheader-toggle" className="text-sm font-medium cursor-pointer select-none truncate" title="Display other payment methods sub-header">Display other payment methods sub-header</label>
+                      </div>
+                      <div className="flex flex-row-reverse justify-between items-center">
+                        <Switch id="klarna-subheader-toggle" checked={showKlarnaSubheader} onCheckedChange={setShowKlarnaSubheader} />
+                        <label htmlFor="klarna-subheader-toggle" className="text-sm font-medium cursor-pointer select-none truncate" title="Display Klarna sub-header">Display Klarna sub-header</label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </TabsContent>
+        </Tabs>
       </Card>
 
       <form onSubmit={handleSubmit} noValidate>
@@ -654,124 +803,141 @@ export default function CheckoutPayment() {
                   onValueChange={value => setPaymentMethod(value as PaymentData["method"])}
                   aria-label="Select payment method"
                 >
-                  <div className="flex items-center space-x-3 p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors min-h-[64px]">
-                    <RadioGroupItem value={PAYMENT_METHODS.CARD} id="card" />
-                    <Label htmlFor="card" className="flex items-center gap-3 cursor-pointer flex-1">
-                      <div className="w-9 h-9 flex items-center justify-center flex-shrink-0">
-                        <Image
-                          src="https://checkoutshopper-live.adyen.com/checkoutshopper/images/logos/medium/card.png"
-                          alt="Credit or Debit Card"
-                          width={36}
-                          height={36}
-                          className="object-contain"
-                        />
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="font-medium">Credit or Debit Card</span>
-                        <span className="text-sm text-muted-foreground">
-                          Visa, Mastercard, American Express
-                        </span>
-                      </div>
-                    </Label>
-                  </div>
-                  {/* Klarna payment option with expandable details INSIDE the same box */}
-                  <div className="border border-border rounded-lg hover:bg-muted/50 transition-colors min-h-[64px] relative flex flex-col">
-                    {/* Klarna selector row */}
-                    <div className="flex items-center space-x-3 p-4">
-                      <RadioGroupItem value={PAYMENT_METHODS.KLARNA} id="klarna" />
-                      <Label
-                        htmlFor="klarna"
-                        className="flex items-center gap-3 cursor-pointer flex-1"
-                      >
-                        <div className="w-9 h-9 flex items-center justify-center flex-shrink-0">
-                          {klarnaLoading && <Skeleton className="w-9 h-9 rounded" />}
-                          {!klarnaLoading && klarnaPresentation && (
-                            <KlarnaIcon paymentPresentation={klarnaPresentation} />
-                          )}
-                          {!klarnaLoading && !klarnaPresentation && (
-                            <div className="w-9 h-9 bg-muted/50 rounded-sm" />
-                          )}
-                        </div>
-                        <div className="flex flex-col flex-1 min-w-0">
-                          <div className="flex items-center text-sm font-medium leading-tight">
-                            {klarnaLoading && <Skeleton className="h-4 w-20" />}
-                            {!klarnaLoading && klarnaPresentation && (
-                              <KlarnaHeader
-                                paymentPresentation={klarnaPresentation}
+                  {paymentOrder.map((method) => {
+                    if (method === PAYMENT_METHODS.CARD) {
+                      return (
+                        <div key={method} className="flex items-center space-x-3 p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors min-h-[64px]">
+                          <RadioGroupItem value={PAYMENT_METHODS.CARD} id="card" />
+                          <Label htmlFor="card" className="flex items-center gap-3 cursor-pointer flex-1">
+                            <div className="w-9 h-9 flex items-center justify-center flex-shrink-0">
+                              <Image
+                                src="https://checkoutshopper-live.adyen.com/checkoutshopper/images/logos/medium/card.png"
+                                alt="Credit or Debit Card"
+                                width={36}
+                                height={36}
+                                className="object-contain"
                               />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="font-medium">Credit or Debit Card</span>
+                              {showOtherSubheader && (
+                                <span className="text-sm text-muted-foreground">
+                                  Visa, Mastercard, American Express
+                                </span>
+                              )}
+                            </div>
+                          </Label>
+                        </div>
+                      )
+                    }
+                    if (method === PAYMENT_METHODS.KLARNA) {
+                      return (
+                        <div key={method} className="border border-border rounded-lg hover:bg-muted/50 transition-colors min-h-[64px] relative flex flex-col">
+                          <div className="flex items-center space-x-3 p-4">
+                            <RadioGroupItem value={PAYMENT_METHODS.KLARNA} id="klarna" />
+                            <Label
+                              htmlFor="klarna"
+                              className="flex items-center gap-3 cursor-pointer flex-1"
+                            >
+                              <div className="w-9 h-9 flex items-center justify-center flex-shrink-0">
+                                {klarnaLoading && <Skeleton className="w-9 h-9 rounded" />}
+                                {!klarnaLoading && klarnaPresentation && (
+                                  <KlarnaIcon paymentPresentation={klarnaPresentation} />
+                                )}
+                                {!klarnaLoading && !klarnaPresentation && (
+                                  <div className="w-9 h-9 bg-muted/50 rounded-sm" />
+                                )}
+                              </div>
+                              <div className="flex flex-col flex-1 min-w-0">
+                                <div className="flex items-center text-sm font-medium leading-tight">
+                                  {klarnaLoading && <Skeleton className="h-4 w-20" />}
+                                  {!klarnaLoading && klarnaPresentation && (
+                                    <KlarnaHeader paymentPresentation={klarnaPresentation} />
+                                  )}
+                                </div>
+                                {showKlarnaSubheader && (
+                                  <div className="flex items-center text-xs text-muted-foreground leading-tight mt-0.5">
+                                    {klarnaLoading && <Skeleton className="h-3 w-24" />}
+                                    {!klarnaLoading && klarnaPresentation && (
+                                      <KlarnaShortSubheader paymentPresentation={klarnaPresentation} />
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </Label>
+                          </div>
+                          <div
+                            className={`transition-opacity duration-200 px-4 pb-2 ${
+                              paymentMethod === PAYMENT_METHODS.KLARNA
+                                ? "opacity-100"
+                                : "opacity-0 pointer-events-none absolute -z-10"
+                            }`}
+                          >
+                            {klarnaLoading && <Skeleton className="h-6 w-64" />}
+                            {!klarnaLoading && klarnaPresentation && (
+                              <KlarnaEnrichedSubheader paymentPresentation={klarnaPresentation} />
                             )}
                           </div>
-                          <div className="flex items-center text-xs text-muted-foreground leading-tight mt-0.5">
-                            {klarnaLoading && <Skeleton className="h-3 w-24" />}
-                            {!klarnaLoading && klarnaPresentation && (
-                              <KlarnaShortSubheader
-                                paymentPresentation={klarnaPresentation}
-                              />
-                            )}
-                          </div>
                         </div>
-                      </Label>
-                    </div>
-
-                    {/* Mount enriched subheader immediately but keep it hidden - positioned below the radio button */}
-                    <div
-                      className={`transition-opacity duration-200 px-4 pb-2 ${
-                        paymentMethod === PAYMENT_METHODS.KLARNA
-                          ? "opacity-100"
-                          : "opacity-0 pointer-events-none absolute -z-10"
-                      }`}
-                    >
-                      {klarnaLoading && <Skeleton className="h-6 w-64" />}
-                      {!klarnaLoading && klarnaPresentation && (
-                        <KlarnaEnrichedSubheader
-                          paymentPresentation={klarnaPresentation}
-                        />
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-3 p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors min-h-[64px]">
-                    <RadioGroupItem value={PAYMENT_METHODS.PAYPAL} id="paypal" />
-                    <Label
-                      htmlFor="paypal"
-                      className="flex items-center gap-3 cursor-pointer flex-1"
-                    >
-                      <div className="w-9 h-9 flex items-center justify-center flex-shrink-0">
-                        <Image
-                          src="https://checkoutshopper-live.adyen.com/checkoutshopper/images/logos/medium/paypal.png"
-                          alt="PayPal"
-                          width={40}
-                          height={36}
-                          className="object-contain"
-                        />
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="font-medium">PayPal</span>
-                        <span className="text-sm text-muted-foreground">
-                          Pay with your PayPal account
-                        </span>
-                      </div>
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-3 p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors min-h-[64px]">
-                    <RadioGroupItem value={PAYMENT_METHODS.BANK} id="bank" />
-                    <Label htmlFor="bank" className="flex items-center gap-3 cursor-pointer flex-1">
-                      <div className="w-9 h-9 flex items-center justify-center flex-shrink-0">
-                        <Image
-                          src="https://checkoutshopper-live.adyen.com/checkoutshopper/images/logos/medium/bank.png"
-                          alt="Bank Transfer"
-                          width={36}
-                          height={36}
-                          className="object-contain"
-                        />
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="font-medium">Bank Transfer</span>
-                        <span className="text-sm text-muted-foreground">
-                          Direct bank account transfer
-                        </span>
-                      </div>
-                    </Label>
-                  </div>
+                      )
+                    }
+                    if (method === PAYMENT_METHODS.PAYPAL) {
+                      return (
+                        <div key={method} className="flex items-center space-x-3 p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors min-h-[64px]">
+                          <RadioGroupItem value={PAYMENT_METHODS.PAYPAL} id="paypal" />
+                          <Label
+                            htmlFor="paypal"
+                            className="flex items-center gap-3 cursor-pointer flex-1"
+                          >
+                            <div className="w-9 h-9 flex items-center justify-center flex-shrink-0">
+                              <Image
+                                src="https://checkoutshopper-live.adyen.com/checkoutshopper/images/logos/medium/paypal.png"
+                                alt="PayPal"
+                                width={40}
+                                height={36}
+                                className="object-contain"
+                              />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="font-medium">PayPal</span>
+                              {showOtherSubheader && (
+                                <span className="text-sm text-muted-foreground">
+                                  Pay with your PayPal account
+                                </span>
+                              )}
+                            </div>
+                          </Label>
+                        </div>
+                      )
+                    }
+                    if (method === PAYMENT_METHODS.BANK) {
+                      return (
+                        <div key={method} className="flex items-center space-x-3 p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors min-h-[64px]">
+                          <RadioGroupItem value={PAYMENT_METHODS.BANK} id="bank" />
+                          <Label htmlFor="bank" className="flex items-center gap-3 cursor-pointer flex-1">
+                            <div className="w-9 h-9 flex items-center justify-center flex-shrink-0">
+                              <Image
+                                src="https://checkoutshopper-live.adyen.com/checkoutshopper/images/logos/medium/bank.png"
+                                alt="Bank Transfer"
+                                width={36}
+                                height={36}
+                                className="object-contain"
+                              />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="font-medium">Bank Transfer</span>
+                              {showOtherSubheader && (
+                                <span className="text-sm text-muted-foreground">
+                                  Direct bank account transfer
+                                </span>
+                              )}
+                            </div>
+                          </Label>
+                        </div>
+                      )
+                    }
+                    return null
+                  })}
                 </RadioGroup>
 
                 {paymentMethod === PAYMENT_METHODS.CARD && (
