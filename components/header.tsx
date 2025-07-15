@@ -5,6 +5,8 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ShoppingCart, User, Menu, X, Smartphone } from "lucide-react"
+import { CurrencyLocaleDisplay } from "@/components/currency-locale-selector";
+import { useCurrencyLocale } from "@/components/currency-locale-context";
 
 interface HeaderProps {
   cartItemCount?: number
@@ -12,6 +14,7 @@ interface HeaderProps {
 
 export default function Header({ cartItemCount = 3 }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const { currency, locale } = useCurrencyLocale();
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen)
 
@@ -53,16 +56,17 @@ export default function Header({ cartItemCount = 3 }: HeaderProps) {
           <Link
             href="/"
             className="flex items-center gap-3 focus:outline-none focus:ring-2 focus:ring-ring rounded-lg p-1"
-            aria-label="TechStore - Go to homepage"
+            aria-label="MicStore - Go to homepage"
           >
             <div className="bg-primary text-primary-foreground p-2.5 rounded-xl">
               <Smartphone className="h-6 w-6" aria-hidden="true" />
             </div>
-            <span className="text-2xl font-bold text-foreground">TechStore</span>
+            <span className="text-2xl font-bold text-foreground">MicStore</span>
           </Link>
 
           {/* Right side actions */}
           <div className="flex items-center gap-3">
+            <CurrencyLocaleDisplay currency={currency} locale={locale} className="hidden md:flex" />
             <Button variant="ghost" size="sm" className="hidden md:flex gap-2 px-4 py-2" asChild>
               <Link href="/account">
                 <User className="h-4 w-4" aria-hidden="true" />

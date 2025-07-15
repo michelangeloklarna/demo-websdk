@@ -1,4 +1,4 @@
-# TechStore Checkout Demo
+# MicStore Checkout Demo
 
 This project is a demo ecommerce checkout application focused on showcasing payment method integrations. It is built with Next.js, TypeScript, Tailwind CSS, and shadcn UI components. The demo is designed to run locally and is also ready for deployment on Vercel with GitHub integration.
 

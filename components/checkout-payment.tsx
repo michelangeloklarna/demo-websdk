@@ -29,10 +29,10 @@ import type { PaymentData } from "@/types"
 import { useKlarna } from "@/hooks/use-klarna"
 import {
   CurrencyLocaleSelector,
-  CurrencyLocaleDisplay,
 } from "@/components/currency-locale-selector"
 import { Switch } from "@/components/ui/switch"
 import { ChevronUp, ChevronDown } from "lucide-react"
+import { useCurrencyLocale } from "@/components/currency-locale-context";
 
 
 // Generic Klarna Component Wrapper - handles mounting any Klarna presentation component
@@ -334,9 +334,8 @@ export default function CheckoutPayment() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
-  // Currency and locale state
-  const [currency, setCurrency] = useState("USD")
-  const [locale, setLocale] = useState("en-US")
+  // Currency and locale state (now from context)
+  const { currency, setCurrency, locale, setLocale } = useCurrencyLocale();
 
   const [formData, setFormData] = useState<FormData>(() => {
     const prefilledData = getPrefilledAddressData(locale)
@@ -408,27 +407,21 @@ export default function CheckoutPayment() {
     locale: locale,
   })
 
-  // Handle currency change - optimized to reduce re-renders
+  // Update handlers to use context setters
   const handleCurrencyChange = useCallback((newCurrency: string) => {
     setCurrency(newCurrency)
-    // Use console.log instead of addLog to avoid re-render dependencies
     console.log("Currency changed to:", newCurrency)
-  }, [])
+  }, [setCurrency])
 
-  // Handle locale change - optimized to reduce re-renders
   const handleLocaleChange = useCallback((newLocale: string) => {
     setLocale(newLocale)
     console.log("Locale changed to:", newLocale)
 
-    // Auto-select appropriate currency for the new locale
     const newCurrency = getCurrencyForLocale(newLocale)
     setCurrency(newCurrency)
     console.log("Currency auto-selected to:", newCurrency, "for locale", newLocale)
 
-    // Auto-select appropriate shipping address country for the new locale
     const newCountry = getCountryCodeForLocale(newLocale)
-    
-    // Update form data with prefilled address data (only for en-US or es-US)
     const prefilledData = getPrefilledAddressData(newLocale)
     setFormData(prev => ({
       ...prev,
@@ -437,7 +430,7 @@ export default function CheckoutPayment() {
     }))
     console.log("Shipping address country auto-selected to:", newCountry, "for locale", newLocale)
     console.log("Form data updated with prefilled address data:", prefilledData)
-  }, [])
+  }, [setLocale, setCurrency])
 
   // --- UX Settings Handlers ---
   const movePayment = (idx: number, dir: -1 | 1) => {
@@ -674,9 +667,7 @@ export default function CheckoutPayment() {
             <h1 className="text-4xl font-bold text-foreground">Checkout</h1>
             <p className="text-muted-foreground mt-3 text-lg">Complete your purchase securely</p>
           </div>
-          <div className="flex flex-col gap-2">
-            <CurrencyLocaleDisplay currency={currency} locale={locale} className="lg:justify-end" />
-          </div>
+          {/* Remove the CurrencyLocaleDisplay from the checkout page header */}
         </div>
       </div>
 

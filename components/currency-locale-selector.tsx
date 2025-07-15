@@ -117,7 +117,6 @@ export function CurrencyLocaleDisplay({
   return (
     <div className={`flex items-center gap-4 text-sm text-muted-foreground ${className}`}>
       <div className="flex items-center gap-1">
-        <DollarSign className="h-3 w-3" />
         <span>
           {getCurrencySymbol(currency)} {currency}
         </span>

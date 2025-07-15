@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google"
 import "./globals.css"
 import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
+import { CurrencyLocaleProvider } from "@/components/currency-locale-context";
 
 const geistSans = Geist({
   subsets: ["latin"],
@@ -18,10 +19,10 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "TechStore - Premium Electronics & Accessories",
+  title: "MicStore - Premium Electronics & Accessories",
   description: "Shop the latest electronics, gadgets, and tech accessories with secure checkout",
   keywords: ["electronics", "gadgets", "tech", "accessories", "online store"],
-  authors: [{ name: "TechStore" }],
+  authors: [{ name: "MicStore" }],
   generator: "v0.dev",
 }
 
@@ -49,7 +50,9 @@ export default function RootLayout({ children }: RootLayoutProps) {
         />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
-        {children}
+        <CurrencyLocaleProvider>
+          {children}
+        </CurrencyLocaleProvider>
         <Analytics />
         <SpeedInsights />
       </body>

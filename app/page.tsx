@@ -4,7 +4,7 @@ import Footer from "@/components/footer"
 import CheckoutPayment from "@/components/checkout-payment"
 
 export const metadata: Metadata = {
-  title: "Checkout - TechStore",
+  title: "Checkout - MicStore",
   description: "Complete your purchase securely with multiple payment options",
 }
 

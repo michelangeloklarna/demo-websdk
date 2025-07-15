@@ -51,12 +51,12 @@ export default function Footer() {
             <Link
               href="/"
               className="flex items-center gap-3 focus:outline-none focus:ring-2 focus:ring-ring rounded-lg p-1"
-              aria-label="TechStore - Go to homepage"
+              aria-label="MicStore - Go to homepage"
             >
               <div className="bg-primary text-primary-foreground p-2.5 rounded-xl">
                 <Smartphone className="h-6 w-6" aria-hidden="true" />
               </div>
-              <span className="text-2xl font-bold">TechStore</span>
+              <span className="text-2xl font-bold">MicStore</span>
             </Link>
             <p className="text-muted-foreground leading-relaxed">
               Your trusted destination for premium electronics, cutting-edge gadgets, and tech
@@ -64,28 +64,28 @@ export default function Footer() {
             </p>
             <div className="flex gap-4" role="list" aria-label="Social media links">
               <Link
-                href="https://facebook.com/techstore"
+                href="https://facebook.com/micstore"
                 className="text-muted-foreground hover:text-foreground transition-colors p-2 rounded-lg hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring"
                 aria-label="Follow us on Facebook"
               >
                 <Facebook className="h-5 w-5" aria-hidden="true" />
               </Link>
               <Link
-                href="https://twitter.com/techstore"
+                href="https://twitter.com/micstore"
                 className="text-muted-foreground hover:text-foreground transition-colors p-2 rounded-lg hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring"
                 aria-label="Follow us on Twitter"
               >
                 <Twitter className="h-5 w-5" aria-hidden="true" />
               </Link>
               <Link
-                href="https://instagram.com/techstore"
+                href="https://instagram.com/micstore"
                 className="text-muted-foreground hover:text-foreground transition-colors p-2 rounded-lg hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring"
                 aria-label="Follow us on Instagram"
               >
                 <Instagram className="h-5 w-5" aria-hidden="true" />
               </Link>
               <Link
-                href="https://youtube.com/techstore"
+                href="https://youtube.com/micstore"
                 className="text-muted-foreground hover:text-foreground transition-colors p-2 rounded-lg hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring"
                 aria-label="Subscribe to our YouTube channel"
               >
@@ -231,25 +231,25 @@ export default function Footer() {
               <div className="flex items-center gap-3">
                 <Phone className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                 <a
-                  href="tel:+18008324786"
+                  href="tel:+18006427867"
                   className="text-muted-foreground hover:text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-ring rounded px-1"
                 >
-                  1-800-TECH-STORE
+                  1-800-MIC-STORE
                 </a>
               </div>
               <div className="flex items-center gap-3">
                 <Mail className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                 <a
-                  href="mailto:support@techstore.com"
+                  href="mailto:support@micstore.com"
                   className="text-muted-foreground hover:text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-ring rounded px-1"
                 >
-                  support@techstore.com
+                  support@micstore.com
                 </a>
               </div>
               <div className="flex items-start gap-3">
                 <MapPin className="h-4 w-4 mt-1 text-muted-foreground" aria-hidden="true" />
                 <span className="text-muted-foreground">
-                  123 Tech Avenue
+                  123 Mic Avenue
                   <br />
                   San Francisco, CA 94105
                 </span>
@@ -294,7 +294,7 @@ export default function Footer() {
                 Accessibility
               </Link>
             </nav>
-            <p className="text-sm text-muted-foreground">© 2024 TechStore. All rights reserved.</p>
+            <p className="text-sm text-muted-foreground">© 2024 MicStore. All rights reserved.</p>
           </div>
         </div>
       </div>
