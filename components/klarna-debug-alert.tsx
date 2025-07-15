@@ -203,6 +203,9 @@ export function KlarnaDebugAlert({ logs, onClearLogs, className }: KlarnaDebugAl
                               <Code2 className="h-3 w-3" />
                               <span className="text-xs font-medium">Data:</span>
                             </div>
+                            <pre className="text-xs overflow-x-auto">
+                              {JSON.stringify(log.data, null, 2)}
+                            </pre>
                           </div>
                         )}
                       </div>
