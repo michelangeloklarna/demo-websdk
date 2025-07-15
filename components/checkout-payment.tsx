@@ -496,7 +496,6 @@ export default function CheckoutPayment() {
           useDifferentBilling,
         }
         const requestBody = JSON.stringify(payload)
-        const requestStartTime = performance.now()
 
         addLog("info", "API Request", "Sending payment authorization request", {
           url: "/api/klarna-authorize",
@@ -510,62 +509,38 @@ export default function CheckoutPayment() {
           headers: { "Content-Type": "application/json" },
           body: requestBody,
         })
-          .then(response => {
-            const responseTime = Math.round(performance.now() - requestStartTime)
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.error) {
+              addLog("error", "API Error", data.error, data.details);
+              throw new Error(data.error);
+            }
 
-            addLog("info", "API Response", "API response received", {
-              status: response.status,
-              statusText: response.statusText,
-              responseTime: responseTime,
-              headers: Object.fromEntries(response.headers.entries()),
-            })
+            addLog("success", "API Response", "Klarna authorization successful", data);
 
-            return response.json()
-          })
-          .then(data => {
-            const responseTime = Math.round(performance.now() - requestStartTime)
-
-            addLog("info", "Backend Response", "Backend response parsed", {
-              ...data,
-              responseTime: responseTime,
-              responseSize: new Blob([JSON.stringify(data)]).size,
-              result: data?.payment_transaction_response?.result,
-              paymentRequestId: data?.payment_request?.payment_request_id,
-            })
-
-            // Handle Step Up Required
             if (
               data?.payment_transaction_response?.result === "STEP_UP_REQUIRED" &&
               data?.payment_request?.payment_request_id
             ) {
-              addLog("info", "Step Up Required", "Additional authentication required", {
-                paymentRequestId: data.payment_request.payment_request_id,
-              })
-              return { paymentRequestId: data.payment_request.payment_request_id }
+              return { paymentRequestId: data.payment_request.payment_request_id };
             }
 
-            // Handle Approved
             if (data?.payment_transaction_response?.result === "APPROVED") {
-              addLog("success", "Payment Approved", "Payment approved, redirecting")
-              window.location.href = "/confirmation"
-              return {}
+              window.location.href = "/confirmation";
+              return {};
             }
 
-            // Handle Declined
             if (data?.payment_transaction_response?.result === "DECLINED") {
-              addLog("warning", "Payment Declined", "Payment declined, redirecting")
-              window.location.href = "/failure"
-              return {}
+              window.location.href = "/failure";
+              return {};
             }
 
-            // Handle unexpected response
-            addLog("error", "Unexpected Response", "Unexpected result", data)
-            throw new Error("Unexpected payment result")
+            throw new Error("Unexpected payment result");
           })
-          .catch(error => {
-            addLog("error", "Payment Error", "Error in payment process", error)
-            throw error
-          })
+          .catch((error) => {
+            addLog("error", "Payment Error", "Error in payment process", error);
+            throw error;
+          });
       },
     }),
     [locale, addLog, currency, orderSummary, cartItems, formData, differentBilling]

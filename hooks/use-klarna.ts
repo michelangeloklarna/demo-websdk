@@ -55,18 +55,13 @@ class KlarnaSDKManager {
     message: string,
     data?: any
   ) {
-    // Log to all registered loggers
-    this.loggers.forEach(logger => {
+    this.loggers.forEach((logger) => {
       try {
-        logger(type, title, message, data)
+        logger(type, title, message, data);
       } catch (e) {
         // Ignore logger errors
       }
-    })
-
-    // Fallback to console
-    const consoleMethod = type === "error" ? "error" : type === "warning" ? "warn" : "log"
-    console[consoleMethod](`[Klarna SDK Manager] ${title}: ${message}`, data || "")
+    });
   }
 
   async loadSDK(locale: string = "en-US"): Promise<any> {
