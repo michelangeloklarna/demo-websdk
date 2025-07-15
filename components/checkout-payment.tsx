@@ -200,7 +200,7 @@ const KlarnaEnrichedSubheader = React.memo(
       componentPath="subheader.enriched.component"
       containerId="klarna-enriched-subheader-container"
       componentName="Enriched Subheader"
-      className="min-h-[40px]"
+      className="min-h-[40px] text-sm font-medium text-muted-foreground leading-relaxed klarna-enriched-subheader"
     />
   ),
   (prevProps, nextProps) => {

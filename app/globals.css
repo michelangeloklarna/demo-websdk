@@ -105,3 +105,40 @@ body {
   opacity: 1 !important;
   cursor: pointer !important;
 }
+
+/* Klarna enriched subheader styling - flexible approach */
+.klarna-enriched-subheader {
+  /* Container should allow flexible layout */
+  display: block;
+  line-height: 1.4;
+  word-spacing: normal;
+}
+
+.klarna-enriched-subheader * {
+  /* Ensure all child elements use consistent text styling */
+  font-size: inherit;
+  color: inherit;
+  line-height: inherit;
+  font-weight: inherit;
+  
+  /* Allow text and inline elements to flow naturally */
+  display: inline;
+  white-space: normal;
+}
+
+.klarna-enriched-subheader a {
+  /* Style links to match design system with proper spacing */
+  text-decoration: underline;
+  color: inherit;
+  transition: text-decoration-color 0.2s ease;
+}
+
+.klarna-enriched-subheader a:hover {
+  text-decoration: none;
+}
+
+/* Ensure spacing between text and links regardless of structure */
+.klarna-enriched-subheader a:before {
+  content: " ";
+  white-space: pre;
+}
