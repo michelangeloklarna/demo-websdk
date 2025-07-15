@@ -3,6 +3,7 @@
 import React from "react"
 
 import { useState, useMemo, useEffect, useRef, useCallback } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -313,6 +314,7 @@ interface FormData {
 }
 
 export default function CheckoutPayment() {
+  const router = useRouter()
   const [paymentMethod, setPaymentMethod] = useState<PaymentData["method"]>(PAYMENT_METHODS.CARD)
   const [differentBilling, setDifferentBilling] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -522,17 +524,19 @@ export default function CheckoutPayment() {
               data?.payment_transaction_response?.result === "STEP_UP_REQUIRED" &&
               data?.payment_request?.payment_request_id
             ) {
-              return { paymentRequestId: data.payment_request.payment_request_id };
+              return Promise.resolve({
+                paymentRequestId: data.payment_request.payment_request_id,
+              })
             }
 
             if (data?.payment_transaction_response?.result === "APPROVED") {
-              window.location.href = "/confirmation";
-              return {};
+              router.push("/confirmation")
+              return Promise.resolve({})
             }
 
             if (data?.payment_transaction_response?.result === "DECLINED") {
-              window.location.href = "/failure";
-              return {};
+              router.push("/failure")
+              return Promise.resolve({})
             }
 
             throw new Error("Unexpected payment result");
