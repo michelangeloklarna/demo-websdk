@@ -4,7 +4,8 @@ import { Geist, Geist_Mono } from "next/font/google"
 import "./globals.css"
 import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
-import { CurrencyLocaleProvider } from "@/components/currency-locale-context";
+import { CurrencyLocaleProvider } from "@/components/currency-locale-context"
+import { AdminProvider } from "@/components/preferences-context"
 
 const geistSans = Geist({
   subsets: ["latin"],
@@ -51,7 +52,9 @@ export default function RootLayout({ children }: RootLayoutProps) {
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
         <CurrencyLocaleProvider>
-          {children}
+          <AdminProvider>
+            {children}
+          </AdminProvider>
         </CurrencyLocaleProvider>
         <Analytics />
         <SpeedInsights />
