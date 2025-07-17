@@ -11,8 +11,7 @@ import { useKlarna } from "@/hooks/use-klarna"
 import { useCurrencyLocale } from "@/components/currency-locale-context"
 import { useUXSettings } from "@/hooks/use-ux-settings"
 import { useCheckoutForm } from "@/hooks/use-checkout-form"
-import { useAdmin } from "@/components/preferences-context"
-import { AdvancedSettingsPanel } from "@/components/checkout-sections/preferences-panel"
+import { UXSettingsPanel } from "@/components/checkout-sections/ux-settings-panel"
 import { PaymentMethodSelection } from "@/components/checkout-sections/payment-method-selection"
 import { ShippingAddress } from "@/components/checkout-sections/shipping-address"
 import { OrderSummarySection } from "@/components/checkout-sections/order-summary"
@@ -27,7 +26,6 @@ export default function CheckoutPayment() {
   const uxSettings = useUXSettings()
   const { currency, setCurrency, locale, setLocale } = useCurrencyLocale()
   const checkoutForm = useCheckoutForm(locale)
-  const { isAdvancedModeEnabled } = useAdmin()
   
   // Local state
   const [paymentMethod, setPaymentMethod] = useState<PaymentData["method"]>(PAYMENT_METHODS.CARD)
@@ -193,8 +191,8 @@ export default function CheckoutPayment() {
         </div>
       </div>
 
-      {/* UX Settings Panel - UX Settings tab hidden by default, shown after clicking Returns 3 times */}
-      <AdvancedSettingsPanel
+      {/* UX Settings Panel */}
+      <UXSettingsPanel
         currency={currency}
         locale={locale}
         onCurrencyChange={handleCurrencyChange}
@@ -212,7 +210,6 @@ export default function CheckoutPayment() {
         onShowKlarnaSubheaderChange={(show) => uxSettings.updateSetting('showKlarnaSubheader', show)}
         onStaggeredLoadingChange={(enabled) => uxSettings.updateSetting('staggeredLoading', enabled)}
         onUseStaticKlarnaChange={(enabled) => uxSettings.updateSetting('useStaticKlarna', enabled)}
-        showUXSettingsTab={isAdvancedModeEnabled}
       />
 
       <form onSubmit={handleSubmit} noValidate>

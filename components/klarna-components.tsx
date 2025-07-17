@@ -188,6 +188,7 @@ export const KlarnaContent = React.memo(({
   useStaticKlarna,
   klarnaPresentation,
   showSubheader = true,
+  paymentMethod,
 }: KlarnaContentProps) => {
   return (
     <>

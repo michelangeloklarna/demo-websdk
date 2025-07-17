@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge"
 import { ShoppingCart, User, Menu, X, Smartphone } from "lucide-react"
 import { CurrencyLocaleDisplay } from "@/components/currency-locale-selector";
 import { useCurrencyLocale } from "@/components/currency-locale-context";
-import { useAdmin } from "@/components/preferences-context";
 
 interface HeaderProps {
   cartItemCount?: number
@@ -16,7 +15,6 @@ interface HeaderProps {
 export default function Header({ cartItemCount = 3 }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const { currency, locale } = useCurrencyLocale();
-  const { handleAdminAction } = useAdmin();
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen)
 
@@ -55,16 +53,16 @@ export default function Header({ cartItemCount = 3 }: HeaderProps) {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
-          <div
-            className="flex items-center gap-3 focus:outline-none focus:ring-2 focus:ring-ring rounded-lg p-1 cursor-pointer"
-            onClick={handleAdminAction}
+          <Link
+            href="/"
+            className="flex items-center gap-3 focus:outline-none focus:ring-2 focus:ring-ring rounded-lg p-1"
             aria-label="MicStore - Go to homepage"
           >
             <div className="bg-primary text-primary-foreground p-2.5 rounded-xl">
               <Smartphone className="h-6 w-6" aria-hidden="true" />
             </div>
             <span className="text-2xl font-bold text-foreground">MicStore</span>
-          </div>
+          </Link>
 
           {/* Right side actions */}
           <div className="flex items-center gap-3">
