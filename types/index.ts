@@ -40,6 +40,54 @@ export interface KlarnaSDKConfig {
   theme?: "light" | "dark"
 }
 
+// Klarna SDK Component Types
+export interface KlarnaComponent {
+  mount: (selector: string | HTMLElement) => void
+  unmount: () => void
+  htmlElement?: HTMLElement
+}
+
+export interface KlarnaComponentFactory {
+  (): KlarnaComponent
+}
+
+export interface KlarnaSubheader {
+  short?: {
+    component: KlarnaComponentFactory
+  }
+  enriched?: {
+    component: KlarnaComponentFactory
+  }
+}
+
+export interface KlarnaPresentation {
+  icon?: {
+    component: KlarnaComponentFactory
+  }
+  header?: {
+    component: KlarnaComponentFactory
+  }
+  subheader?: KlarnaSubheader
+  paymentButton?: {
+    component: (config: any) => KlarnaComponent
+  }
+}
+
+export interface KlarnaSDK {
+  Payment?: {
+    presentation: (config: {
+      amount: number
+      currency: string
+      locale: string
+    }) => Promise<KlarnaPresentation>
+  }
+  presentation?: (config: {
+    amount: number
+    currency: string
+    locale: string
+  }) => Promise<KlarnaPresentation>
+}
+
 export interface KlarnaPaymentMethodCategory {
   identifier: string
   name: string
@@ -55,26 +103,6 @@ export interface KlarnaSessionData {
   payment_method_categories: KlarnaPaymentMethodCategory[]
   session_intent: string
   expires_at: string
-}
-
-export interface KlarnaSDK {
-  init: (config: KlarnaSDKConfig) => Promise<void>
-  load: (options: {
-    container: string
-    session_token: string
-    payment_method_category?: string
-    on_load?: (loadEvent: any) => void
-    on_load_payment_review?: (loadEvent: any) => void
-    on_authorize?: (authorizeEvent: any) => void
-    on_finalize?: (finalizeEvent: any) => void
-    on_error?: (error: any) => void
-    on_shipping_address_change?: (event: any) => void
-    on_shipping_option_change?: (event: any) => void
-    on_billing_address_change?: (event: any) => void
-  }) => Promise<void>
-  authorize: () => Promise<void>
-  reauthorize: () => Promise<void>
-  finalize: () => Promise<void>
 }
 
 // Currency and Locale Types

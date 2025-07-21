@@ -7,7 +7,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { PAYMENT_METHODS } from "@/lib/constants"
-import { KlarnaContent, KlarnaExpandedContent } from "@/components/klarna-components"
+import { KlarnaContent, KlarnaEnrichedSubheaderManager } from "@/components/klarna-components"
 import type { PaymentData } from "@/types"
 import type { FormData } from "@/hooks/use-checkout-form"
 
@@ -49,6 +49,17 @@ export function PaymentMethodSelection({
   formData,
   onFieldChange,
 }: PaymentMethodSelectionProps) {
+  // Debug: Log when presentation changes
+  React.useEffect(() => {
+    if (klarnaPresentation) {
+      console.log('[PaymentMethodSelection] Klarna presentation available:', {
+        hasPresentation: !!klarnaPresentation,
+        hasSubheader: !!klarnaPresentation?.subheader,
+        hasEnriched: !!klarnaPresentation?.subheader?.enriched,
+        keys: Object.keys(klarnaPresentation || {})
+      })
+    }
+  }, [klarnaPresentation])
   const renderPaymentMethod = (method: string, index: number) => {
     const itemStyle = staggeredLoading ? {
       transitionDelay: `${index * 100}ms`,
@@ -110,13 +121,13 @@ export function PaymentMethodSelection({
               />
             </Label>
           </div>
-          {paymentMethod === PAYMENT_METHODS.KLARNA && (
-            <KlarnaExpandedContent
-              isLoading={klarnaLoading}
-              staggeredLoading={staggeredLoading}
-              klarnaPresentation={klarnaPresentation}
-            />
-          )}
+          {/* Use the new enriched subheader manager for proper SDK lifecycle management */}
+          <KlarnaEnrichedSubheaderManager
+            klarnaPresentation={klarnaPresentation}
+            isVisible={paymentMethod === PAYMENT_METHODS.KLARNA && showKlarnaSubheader}
+            isLoading={klarnaLoading}
+            staggeredLoading={staggeredLoading}
+          />
         </div>
       )
     }

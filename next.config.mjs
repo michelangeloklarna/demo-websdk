@@ -9,7 +9,7 @@ const nextConfig = {
   },
   images: {
     unoptimized: process.env.NODE_ENV === "development",
-    domains: ["placeholder.com", "checkoutshopper-live.adyen.com"],
+    domains: ["placeholder.com", "checkoutshopper-live.adyen.com", "x.klarnacdn.net"],
   },
   experimental: {
     // typedRoutes: true, // Temporarily disabled for demo

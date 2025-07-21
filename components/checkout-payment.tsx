@@ -1,9 +1,10 @@
 "use client"
 
-import React, { useState, useMemo, useCallback } from "react"
+import React, { useState, useMemo, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { MOCK_CART_ITEMS, PAYMENT_METHODS } from "@/lib/constants"
+import { PAYMENT_METHODS } from "@/lib/constants"
+import { useCartContext } from "@/components/cart-context"
 import { getCurrencyForLocale, getCountryCodeForLocale } from "@/lib/country-data"
 import { calculateOrderSummary } from "@/lib/utils"
 import type { PaymentData } from "@/types"
@@ -15,6 +16,8 @@ import { UXSettingsPanel } from "@/components/checkout-sections/ux-settings-pane
 import { PaymentMethodSelection } from "@/components/checkout-sections/payment-method-selection"
 import { ShippingAddress } from "@/components/checkout-sections/shipping-address"
 import { OrderSummarySection } from "@/components/checkout-sections/order-summary"
+import { Button } from "@/components/ui/button"
+import { ShoppingCart } from "lucide-react"
 
 
 // All Klarna components and form helpers have been moved to separate files
@@ -26,6 +29,7 @@ export default function CheckoutPayment() {
   const uxSettings = useUXSettings()
   const { currency, setCurrency, locale, setLocale } = useCurrencyLocale()
   const checkoutForm = useCheckoutForm(locale)
+  const { items: cartItems, isEmpty: isCartEmpty } = useCartContext()
   
   // Local state
   const [paymentMethod, setPaymentMethod] = useState<PaymentData["method"]>(PAYMENT_METHODS.CARD)
@@ -33,13 +37,13 @@ export default function CheckoutPayment() {
   const [submitError, setSubmitError] = useState<string | null>(null)
 
   // Initialize payment method from UX settings
-  useState(() => {
+  useEffect(() => {
     if (uxSettings.hydrated) {
       setPaymentMethod(uxSettings.defaultPayment as PaymentData["method"])
     }
-  })
+  }, [uxSettings.hydrated, uxSettings.defaultPayment])
 
-  const orderSummary = useMemo(() => calculateOrderSummary(MOCK_CART_ITEMS), [])
+  const orderSummary = useMemo(() => calculateOrderSummary(cartItems), [cartItems])
 
   // Load Klarna WebSDK
   const { klarnaPresentation, isLoading: klarnaLoading } = useKlarna({
@@ -51,20 +55,16 @@ export default function CheckoutPayment() {
   // Handlers
   const handleCurrencyChange = useCallback((newCurrency: string) => {
     setCurrency(newCurrency)
-    console.log("Currency changed to:", newCurrency)
   }, [setCurrency])
 
   const handleLocaleChange = useCallback((newLocale: string) => {
     setLocale(newLocale)
-    console.log("Locale changed to:", newLocale)
 
     const newCurrency = getCurrencyForLocale(newLocale)
     setCurrency(newCurrency)
-    console.log("Currency auto-selected to:", newCurrency, "for locale", newLocale)
 
     const newCountry = getCountryCodeForLocale(newLocale)
     checkoutForm.updateFormDataForLocale(newLocale, newCountry)
-    console.log("Shipping address country auto-selected to:", newCountry, "for locale", newLocale)
   }, [setLocale, setCurrency, checkoutForm])
 
   // Memoize the Klarna button configuration
@@ -77,16 +77,11 @@ export default function CheckoutPayment() {
     initiate: () => {
       const { shipping, billing, useDifferentBilling } = checkoutForm.getAddresses()
 
-      console.log("🚀 Payment Data:")
-      console.log("  Use different billing:", useDifferentBilling)
-      console.log("  Shipping:", shipping)
-      console.log("  Billing:", billing)
-
       const payload = {
         currency,
         locale,
         orderSummary,
-        cartItems: MOCK_CART_ITEMS,
+        cartItems,
         shippingAddress: shipping,
         billingAddress: billing,
         useDifferentBilling,
@@ -128,7 +123,7 @@ export default function CheckoutPayment() {
           throw error
         })
     },
-  }), [locale, currency, orderSummary, checkoutForm, router])
+  }), [locale, currency, orderSummary, cartItems, checkoutForm, router])
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -158,6 +153,28 @@ export default function CheckoutPayment() {
     }
   }
 
+  // Show empty cart state if no items
+  if (isCartEmpty) {
+    return (
+      <div className="max-w-2xl mx-auto text-center py-16">
+        <div className="mb-8">
+          <div className="bg-muted/50 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6">
+            <ShoppingCart className="h-12 w-12 text-muted-foreground" />
+          </div>
+          <h1 className="text-3xl font-bold text-foreground mb-4">Your cart is empty</h1>
+          <p className="text-muted-foreground text-lg mb-8">
+            Add some products to your cart to proceed with checkout
+          </p>
+          <Button asChild size="lg">
+            <Link href="/products">
+              Continue Shopping
+            </Link>
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-6xl mx-auto">
       <div className="mb-12">
@@ -166,14 +183,14 @@ export default function CheckoutPayment() {
           aria-label="Breadcrumb"
         >
           <Link
-            href="/"
+            href="/products"
             className="hover:text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-ring rounded px-1"
           >
-            Home
+            Products
           </Link>
           <span aria-hidden="true">/</span>
           <Link
-            href="/cart"
+            href="/checkout"
             className="hover:text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-ring rounded px-1"
           >
             Cart
@@ -245,7 +262,7 @@ export default function CheckoutPayment() {
           {/* Order Summary */}
           <div className="lg:col-span-1">
             <OrderSummarySection
-              cartItems={MOCK_CART_ITEMS}
+              cartItems={cartItems}
               orderSummary={orderSummary}
               currency={currency}
               locale={locale}

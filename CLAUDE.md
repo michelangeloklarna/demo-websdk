@@ -28,16 +28,58 @@ Before making changes, always run:
 2. Check that build passes without errors
 3. Verify all components are properly error-bounded
 
+## Development Workflow (4-Phase Process)
+
+### Phase 1: Planning & Design
+- Analyze requirements and existing codebase patterns
+- Plan component architecture and data flow
+- Consider error handling and loading states
+
+### Phase 2: Implementation
+- Follow TypeScript strict mode (no `any` types)
+- Use existing patterns and utilities
+- Implement proper error boundaries
+
+### Phase 3: Validation
+- Run `pnpm type-check` - TypeScript validation
+- Run `pnpm lint` - Code quality checks
+- Run `pnpm format:check` - Code formatting
+- Run `pnpm build` - Production build verification
+- Test error scenarios and edge cases
+
+### Phase 4: Documentation
+- Update inline comments for complex logic
+- Document new patterns or utilities
+
 ## Architecture
 
-### Core Structure
+### Project Structure
+- **Main Application**: `/demo-websdk/` contains the Next.js application
+- **Root Components**: `/components/` contains shared checkout components 
+- **Main Entry**: `app/page.tsx` renders the checkout page
+- **Primary Component**: `components/checkout-payment.tsx` orchestrates the checkout flow
+- **API Routes**: `app/api/klarna-authorize/route.ts` handles payment authorization
 
-- **Next.js App Router**: Uses the `app/` directory structure
-- **Main Entry Point**: `app/page.tsx` renders the checkout page
-- **Primary Component**: `components/checkout-payment.tsx` contains the full checkout flow
-- **Type Definitions**: `types/index.ts` defines interfaces for CartItem, PaymentData, OrderSummary, etc.
-- **Constants**: `lib/constants.ts` contains mock cart items and payment method constants
-- **Utilities**: `lib/utils.ts` includes order calculation and formatting functions
+### Key Components Architecture
+
+#### Core Files
+- `types/index.ts` - All TypeScript interfaces and types
+- `lib/constants.ts` - Payment methods, mock data, re-exports from country-data
+- `lib/country-data.ts` - Centralized geographic/currency data (27 countries, 15 currencies, 58 locales)
+- `lib/utils.ts` - Order calculations and utility functions
+- `lib/validation/schemas.ts` - Zod validation schemas
+
+#### Custom Hooks
+- `hooks/use-klarna.ts` - Klarna WebSDK integration with error handling
+- `hooks/use-checkout-form.ts` - Form state management
+- `hooks/use-ux-settings.ts` - UX customization settings
+- `hooks/use-toast.ts` - Toast notifications
+
+#### Checkout Sections
+- `components/checkout-sections/payment-method-selection.tsx` - Payment method UI
+- `components/checkout-sections/shipping-address.tsx` - Address form
+- `components/checkout-sections/order-summary.tsx` - Order calculation display
+- `components/checkout-sections/ux-settings-panel.tsx` - Demo customization
 
 ### UI Components
 
@@ -68,84 +110,83 @@ The checkout supports four payment methods defined in `lib/constants.ts:30`:
 
 ## Development Guidelines
 
-### Code Quality Standards
+### TypeScript Requirements
+- **Strict Mode**: No `any` types allowed
+- **Explicit Interfaces**: Define interfaces for all data structures
+- **Type Imports**: Use `import type` for type-only imports
+- **Form Validation**: Use Zod schemas for all validation
 
-- Always run `pnpm validate` before committing
-- Use TypeScript strictly - no `any` types
-- Implement proper error boundaries
-- Use Zod schemas for all form validation
-- Follow ESLint and Prettier configurations
-- Use 2 spaces for indentation, double quotes for strings
-- Use absolute imports with `@/` prefix for clean import paths
-- Follow kebab-case for files: `checkout-payment.tsx`
-- Use PascalCase for components: `CheckoutPayment`
-- Use camelCase for functions: `calculateOrderSummary`
+### Code Style
+- **Indentation**: 2 spaces
+- **Quotes**: Double quotes for strings
+- **Semicolons**: Always use semicolons
+- **Trailing Commas**: Always include trailing commas
 
-### Component Architecture
+### Import Organization (Required Order)
+```typescript
+// 1. React/Next.js
+import React, { useState } from "react"
+import { useRouter } from "next/navigation"
 
-- Use custom hooks for complex logic (e.g., `useKlarna`)
-- Keep components focused and composable
-- Always use shadcn UI components from `components/ui/`
-- Implement proper loading and error states
-- Use absolute imports with `@/` prefix
+// 2. Third-party libraries
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
 
-### Error Handling
+// 3. Internal components/hooks (absolute imports with @/)
+import { Button } from "@/components/ui/button"
+import { useKlarna } from "@/hooks/use-klarna"
 
-- Wrap components in ErrorBoundary where appropriate
-- Implement proper async error handling with try-catch blocks
-- Provide meaningful error messages to users
-- Log errors with context for debugging
-- Implement fallback UI states for error conditions
-- Validate user inputs and API responses
-- Handle network timeouts gracefully
+// 4. Types
+import type { PaymentData } from "@/types"
 
-### Payment Integration Focus
+// 5. Relative imports (./path)
+```
 
-All features should align with demonstrating payment method integrations in an ecommerce context. This is a demo application specifically for showcasing payment flows.
+### File and Component Naming
+- **Files**: kebab-case (`checkout-payment.tsx`)
+- **Components**: PascalCase (`CheckoutPayment`)
+- **Functions**: camelCase (`calculateOrderSummary`)
+- **Constants**: UPPER_SNAKE_CASE (`MOCK_CART_ITEMS`)
 
-### Security and Performance
+### Error Handling Requirements
+- **Component Boundaries**: Wrap components in ErrorBoundary
+- **Async Operations**: Use try-catch blocks
+- **User Feedback**: Provide meaningful error messages
+- **Fallback States**: Implement graceful degradation
+- **Loading States**: Always show loading indicators
+- **Input Validation**: Validate all user inputs with Zod
 
-- Never expose sensitive data in client-side code
-- Use proper environment variables
-- Implement CSP headers for security
-- Optimize for performance with proper loading states
-- Implement skeleton screens for better UX
-- Use React.memo for expensive components
-- Validate all user inputs on both client and server
-- Monitor Core Web Vitals and use Next.js built-in performance monitoring
+### Component Architecture Guidelines
+- **Custom Hooks**: Extract complex logic into hooks
+- **Single Responsibility**: Keep components focused
+- **Composition**: Use shadcn UI components from `components/ui/`
+- **Absolute Imports**: Use `@/` prefix for all internal imports
+- **Form Management**: Use react-hook-form with Zod validation
 
-### Deployment
-
-The project is configured for Vercel deployment with GitHub integration for continuous deployment. Local development uses company registry, while Vercel uses public npm registry via `.vercelignore`.
-
-## Klarna SDK Configuration
+## Klarna Integration
 
 ### Environment Variables
-
 Set these in your `.env.local` file:
-
 ```
 NEXT_PUBLIC_KLARNA_CLIENT_ID=your_klarna_client_id
 NEXT_PUBLIC_KLARNA_PARTNER_ACCOUNT_ID=your_partner_account_id
 ```
 
-### Getting Klarna Credentials
+### Key Integration Points
+- **SDK Loading**: `hooks/use-klarna.ts` handles WebSDK initialization
+- **Error Handling**: Custom element conflicts and timeout handling
+- **Payment Flow**: Integration with checkout form validation
+- **Demo Mode**: Automatic fallback when credentials are missing
 
-1. **Sign up for Klarna Developer Account**: Visit [Klarna Developer Portal](https://docs.klarna.com/)
-2. **Create a Playground Application**: Follow the setup guide for web SDK
-3. **Get Your Credentials**: Copy your Client ID and Partner Account ID
-4. **Update Environment Variables**: Add them to your `.env.local` file
+## Security & Performance
+- **Environment Variables**: Never expose sensitive data client-side
+- **Input Validation**: Server-side and client-side validation
+- **Performance**: React.memo for expensive components
+- **Loading States**: Skeleton screens and proper loading indicators
+- **Core Web Vitals**: Monitor performance with Next.js analytics
 
-### Demo Mode
-
-If valid credentials are not provided, the application will automatically switch to demo mode with mock data. This allows you to test the integration flow without real Klarna credentials.
-
-### Debug Console
-
-The application includes a comprehensive debug console that shows:
-
-- SDK loading progress
-- Configuration details
-- Error messages with suggested fixes
-- Demo mode notifications
-- Real-time interaction logs
+## Testing & Deployment
+- **Local Development**: Uses company registry for dependencies
+- **Vercel Deployment**: Configured for GitHub integration
+- **Build Verification**: Always test production builds
+- **Error Monitoring**: Comprehensive error boundaries and logging

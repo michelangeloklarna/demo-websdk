@@ -250,6 +250,20 @@ class KlarnaSDKManager {
         // Cache the presentation
         this.presentations.set(key, presentation)
         this.log("success", "Presentation Created", "Payment presentation ready")
+        
+        // Debug: Log presentation structure
+        const hasIcon = !!presentation?.icon?.component
+        const hasHeader = !!presentation?.header?.component
+        const hasShortSubheader = !!presentation?.subheader?.short?.component
+        const hasEnrichedSubheader = !!presentation?.subheader?.enriched?.component
+        
+        this.log("info", "Presentation Structure", "Available components", {
+          icon: hasIcon,
+          header: hasHeader,
+          shortSubheader: hasShortSubheader,
+          enrichedSubheader: hasEnrichedSubheader,
+          keys: Object.keys(presentation || {})
+        })
       }
 
       return presentation
@@ -323,9 +337,12 @@ export function useKlarna({
       message: string,
       data?: any
     ) => {
-      // No-op
+      if (title.includes('Presentation') || title.includes('Amount')) {
+        console.log(`[useKlarna] ${type}: ${title} - ${message}`, data || '')
+      }
+      onLog?.(type, title, message, data)
     },
-    []
+    [onLog]
   );
 
   const loadSDK = useCallback(async () => {
@@ -377,12 +394,12 @@ export function useKlarna({
     };
   }, [manager, onLog]);
 
-  // Load SDK on mount
+  // Load SDK on mount - call presentation function immediately for better UX
   useEffect(() => {
-    if (loadOnMount && amount > 0) {
+    if (loadOnMount) {
       loadSDK()
     }
-  }, [loadOnMount, loadSDK, amount])
+  }, [loadOnMount, loadSDK])
 
   // Update presentation when dependencies change
   useEffect(() => {
