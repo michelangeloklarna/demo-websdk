@@ -110,11 +110,13 @@ export function PaymentMethodSelection({
               />
             </Label>
           </div>
-          <KlarnaExpandedContent
-            isLoading={klarnaLoading}
-            staggeredLoading={staggeredLoading}
-            klarnaPresentation={klarnaPresentation}
-          />
+          {paymentMethod === PAYMENT_METHODS.KLARNA && (
+            <KlarnaExpandedContent
+              isLoading={klarnaLoading}
+              staggeredLoading={staggeredLoading}
+              klarnaPresentation={klarnaPresentation}
+            />
+          )}
         </div>
       )
     }
