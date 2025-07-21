@@ -1,13 +1,16 @@
 "use client"
 
-import React, { useRef, useEffect, useMemo } from "react"
+import React, { useRef, useEffect, useMemo, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
+import { Minus, Plus } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
 import { PAYMENT_METHODS } from "@/lib/constants"
+import { useToast } from "@/hooks/use-toast"
 import type { PaymentData } from "@/types"
 
 interface OrderItem {
@@ -39,6 +42,10 @@ interface OrderSummaryProps {
   klarnaLoading: boolean
   buttonConfig: any
   
+  // Cart management handlers
+  onUpdateQuantity?: (productId: number, quantity: number) => void
+  onRemoveItem?: (productId: number) => void
+  
   // Handlers
   onNonKlarnaSubmit: () => void
 }
@@ -54,11 +61,15 @@ export function OrderSummarySection({
   klarnaPresentation,
   klarnaLoading,
   buttonConfig,
+  onUpdateQuantity,
+  onRemoveItem,
   onNonKlarnaSubmit,
 }: OrderSummaryProps) {
   // Refs for Klarna payment button
   const klarnaButtonContainerRef = useRef<HTMLDivElement>(null)
   const klarnaButtonRef = useRef<any>(null)
+  const [isRemoving, setIsRemoving] = useState<number | null>(null)
+  const { toast } = useToast()
 
   const submitButtonText = useMemo(() => {
     if (isSubmitting) {
@@ -136,7 +147,7 @@ export function OrderSummarySection({
         {/* Cart Items */}
         <div className="space-y-4" role="list" aria-label="Cart items">
           {cartItems.map(item => (
-            <div key={item.id} className="flex items-center gap-3" role="listitem">
+            <div key={item.id} className="flex items-start gap-3" role="listitem">
               <div className="relative">
                 <Image
                   src={item.image || "/placeholder.svg"}
@@ -145,22 +156,107 @@ export function OrderSummarySection({
                   height={64}
                   className="object-cover rounded-md border"
                 />
-                {item.quantity > 1 && (
-                  <span
-                    className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center"
-                    aria-label={`Quantity: ${item.quantity}`}
-                  >
-                    {item.quantity}
-                  </span>
-                )}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{item.name}</p>
-                <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
+                <p className="text-sm font-medium truncate mb-2">{item.name}</p>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      {onUpdateQuantity && onRemoveItem ? (
+                        <div className="flex items-center border rounded-md bg-background shadow-sm">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 hover:bg-muted rounded-l-md rounded-r-none border-r transition-colors"
+                            onClick={() => {
+                              const newQuantity = Math.max(0, item.quantity - 1)
+                              onUpdateQuantity(item.id, newQuantity)
+                              if (newQuantity === 0) {
+                                toast({
+                                  title: "Item removed",
+                                  description: `${item.name} has been removed from your cart.`,
+                                  duration: 3000,
+                                })
+                              }
+                            }}
+                            aria-label={`Decrease quantity of ${item.name}`}
+                            disabled={item.quantity <= 1}
+                          >
+                            <Minus className={`h-3 w-3 transition-colors ${item.quantity <= 1 ? 'text-muted-foreground' : 'text-foreground'}`} />
+                          </Button>
+                          <span className="px-3 text-sm font-medium min-w-[2.5rem] text-center bg-muted/30 h-8 flex items-center justify-center border-r">
+                            {item.quantity}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 hover:bg-muted rounded-r-md rounded-l-none transition-colors"
+                            onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
+                            aria-label={`Increase quantity of ${item.name}`}
+                          >
+                            <Plus className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
+                      )}
+                    </div>
+                    <p className="text-sm font-medium">
+                      {formatCurrency(item.price * item.quantity, currency, locale)}
+                    </p>
+                  </div>
+                  {onUpdateQuantity && onRemoveItem && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="h-auto p-0 text-xs text-muted-foreground hover:text-destructive underline-offset-4 transition-colors duration-200 justify-start"
+                          disabled={isRemoving === item.id}
+                        >
+                          {isRemoving === item.id ? (
+                            <span className="flex items-center gap-1">
+                              <div className="animate-spin h-3 w-3 border border-destructive border-t-transparent rounded-full" />
+                              Removing...
+                            </span>
+                          ) : (
+                            "Remove"
+                          )}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Remove item from cart?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to remove <strong>{item.name}</strong> from your cart? This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Keep item</AlertDialogCancel>
+                          <AlertDialogAction
+                            className="bg-destructive hover:bg-destructive/90 focus:ring-destructive"
+                            onClick={() => {
+                              setIsRemoving(item.id)
+                              // Add a small delay for better UX feedback
+                              setTimeout(() => {
+                                onRemoveItem(item.id)
+                                setIsRemoving(null)
+                                toast({
+                                  title: "Item removed",
+                                  description: `${item.name} has been removed from your cart.`,
+                                  duration: 3000,
+                                })
+                              }, 300)
+                            }}
+                          >
+                            Remove item
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+                </div>
               </div>
-              <p className="text-sm font-medium">
-                {formatCurrency(item.price * item.quantity, currency, locale)}
-              </p>
             </div>
           ))}
         </div>
@@ -257,4 +353,4 @@ export function OrderSummarySection({
       </CardContent>
     </Card>
   )
-} 
+}

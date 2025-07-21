@@ -85,6 +85,7 @@ export function PaymentMethodSelection({
                 width={36}
                 height={36}
                 className="object-contain"
+                style={{ width: 'auto', height: 'auto' }}
               />
             </div>
             <div className="flex flex-col">
@@ -150,6 +151,7 @@ export function PaymentMethodSelection({
                 width={40}
                 height={36}
                 className="object-contain"
+                style={{ width: 'auto', height: 'auto' }}
               />
             </div>
             <div className="flex flex-col">
@@ -183,6 +185,7 @@ export function PaymentMethodSelection({
                 width={36}
                 height={36}
                 className="object-contain"
+                style={{ width: 'auto', height: 'auto' }}
               />
             </div>
             <div className="flex flex-col">
@@ -212,6 +215,7 @@ export function PaymentMethodSelection({
               width={36}
               height={36}
               className="object-contain"
+              style={{ width: 'auto', height: 'auto' }}
             />
           </div>
           Payment Method

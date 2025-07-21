@@ -29,7 +29,7 @@ export default function CheckoutPayment() {
   const uxSettings = useUXSettings()
   const { currency, setCurrency, locale, setLocale } = useCurrencyLocale()
   const checkoutForm = useCheckoutForm(locale)
-  const { items: cartItems, isEmpty: isCartEmpty } = useCartContext()
+  const { items: cartItems, isEmpty: isCartEmpty, updateQuantity, removeItem } = useCartContext()
   
   // Local state
   const [paymentMethod, setPaymentMethod] = useState<PaymentData["method"]>(PAYMENT_METHODS.CARD)
@@ -272,6 +272,8 @@ export default function CheckoutPayment() {
               klarnaPresentation={klarnaPresentation}
               klarnaLoading={klarnaLoading}
               buttonConfig={buttonConfig}
+              onUpdateQuantity={updateQuantity}
+              onRemoveItem={removeItem}
               onNonKlarnaSubmit={handleNonKlarnaSubmit}
             />
           </div>
