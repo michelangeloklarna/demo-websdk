@@ -11,13 +11,6 @@ import { KlarnaContent, KlarnaExpandedContent } from "@/components/klarna-compon
 import type { PaymentData } from "@/types"
 import type { FormData } from "@/hooks/use-checkout-form"
 
-const PAYMENT_METHOD_LABELS: Record<string, string> = {
-  [PAYMENT_METHODS.CARD]: "Credit or Debit Card",
-  [PAYMENT_METHODS.KLARNA]: "Klarna",
-  [PAYMENT_METHODS.PAYPAL]: "PayPal",
-  [PAYMENT_METHODS.BANK]: "Bank Transfer",
-}
-
 interface PaymentMethodSelectionProps {
   // Payment method state
   paymentMethod: PaymentData["method"]
@@ -114,7 +107,6 @@ export function PaymentMethodSelection({
                 useStaticKlarna={useStaticKlarna}
                 klarnaPresentation={klarnaPresentation}
                 showSubheader={showKlarnaSubheader}
-                paymentMethod={paymentMethod}
               />
             </Label>
           </div>
@@ -122,7 +114,6 @@ export function PaymentMethodSelection({
             isLoading={klarnaLoading}
             staggeredLoading={staggeredLoading}
             klarnaPresentation={klarnaPresentation}
-            paymentMethod={paymentMethod}
           />
         </div>
       )

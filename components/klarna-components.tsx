@@ -179,7 +179,6 @@ interface KlarnaContentProps {
   useStaticKlarna: boolean
   klarnaPresentation: any
   showSubheader?: boolean
-  paymentMethod?: string
 }
 
 export const KlarnaContent = React.memo(({
@@ -188,7 +187,6 @@ export const KlarnaContent = React.memo(({
   useStaticKlarna,
   klarnaPresentation,
   showSubheader = true,
-  paymentMethod,
 }: KlarnaContentProps) => {
   return (
     <>
@@ -275,18 +273,9 @@ export const KlarnaExpandedContent = React.memo(({
   isLoading,
   staggeredLoading,
   klarnaPresentation,
-  paymentMethod,
-}: Pick<KlarnaContentProps, 'isLoading' | 'staggeredLoading' | 'klarnaPresentation' | 'paymentMethod'>) => {
-  const PAYMENT_METHODS = { KLARNA: 'klarna' } // Import this from constants in real implementation
-  
+}: Pick<KlarnaContentProps, 'isLoading' | 'staggeredLoading' | 'klarnaPresentation'>) => {
   return (
-    <div
-      className={`transition-opacity duration-200 px-4 pb-2 ${
-        paymentMethod === PAYMENT_METHODS.KLARNA
-          ? "opacity-100"
-          : "opacity-0 pointer-events-none absolute -z-10"
-      }`}
-    >
+    <div className="transition-opacity duration-200 px-4 pb-2 opacity-100">
       <div className="min-h-[40px] flex items-start">
         {isLoading && staggeredLoading && (
           <div className="flex items-center gap-2">
