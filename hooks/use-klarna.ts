@@ -55,13 +55,13 @@ class KlarnaSDKManager {
     message: string,
     data?: any
   ) {
-    this.loggers.forEach((logger) => {
+    this.loggers.forEach(logger => {
       try {
-        logger(type, title, message, data);
+        logger(type, title, message, data)
       } catch (e) {
         // Ignore logger errors
       }
-    });
+    })
   }
 
   async loadSDK(locale: string = "en-US"): Promise<any> {
@@ -250,19 +250,19 @@ class KlarnaSDKManager {
         // Cache the presentation
         this.presentations.set(key, presentation)
         this.log("success", "Presentation Created", "Payment presentation ready")
-        
+
         // Debug: Log presentation structure
         const hasIcon = !!presentation?.icon?.component
         const hasHeader = !!presentation?.header?.component
         const hasShortSubheader = !!presentation?.subheader?.short?.component
         const hasEnrichedSubheader = !!presentation?.subheader?.enriched?.component
-        
+
         this.log("info", "Presentation Structure", "Available components", {
           icon: hasIcon,
           header: hasHeader,
           shortSubheader: hasShortSubheader,
           enrichedSubheader: hasEnrichedSubheader,
-          keys: Object.keys(presentation || {})
+          keys: Object.keys(presentation || {}),
         })
       }
 
@@ -337,28 +337,28 @@ export function useKlarna({
       message: string,
       data?: any
     ) => {
-      if (title.includes('Presentation') || title.includes('Amount')) {
-        console.log(`[useKlarna] ${type}: ${title} - ${message}`, data || '')
+      if (title.includes("Presentation") || title.includes("Amount")) {
+        console.log(`[useKlarna] ${type}: ${title} - ${message}`, data || "")
       }
       onLog?.(type, title, message, data)
     },
     [onLog]
-  );
+  )
 
   const loadSDK = useCallback(async () => {
     try {
-      setIsLoading(true);
-      setError(null);
+      setIsLoading(true)
+      setError(null)
 
-      const sdk = await manager.loadSDK(locale);
-      setKlarnaSDK(sdk);
+      const sdk = await manager.loadSDK(locale)
+      setKlarnaSDK(sdk)
     } catch (err) {
-      const error = err as Error;
-      setError(error);
+      const error = err as Error
+      setError(error)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  }, [locale, manager]);
+  }, [locale, manager])
 
   // Update presentation when amount/currency/locale changes
   const updatePresentation = useCallback(async () => {
@@ -385,14 +385,14 @@ export function useKlarna({
 
   useEffect(() => {
     if (onLog) {
-      manager.addLogger(onLog);
+      manager.addLogger(onLog)
     }
     return () => {
       if (onLog) {
-        manager.removeLogger(onLog);
+        manager.removeLogger(onLog)
       }
-    };
-  }, [manager, onLog]);
+    }
+  }, [manager, onLog])
 
   // Load SDK on mount - call presentation function immediately for better UX
   useEffect(() => {

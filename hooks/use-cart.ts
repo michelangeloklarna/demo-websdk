@@ -50,13 +50,11 @@ export function useCart(): UseCartReturn {
 
     setItems(currentItems => {
       const existingItem = currentItems.find(item => item.id === productId)
-      
+
       if (existingItem) {
         // Update quantity if item already exists
         return currentItems.map(item =>
-          item.id === productId
-            ? { ...item, quantity: item.quantity + quantity }
-            : item
+          item.id === productId ? { ...item, quantity: item.quantity + quantity } : item
         )
       } else {
         // Add new item to cart
@@ -72,9 +70,7 @@ export function useCart(): UseCartReturn {
     }
 
     setItems(currentItems =>
-      currentItems.map(item =>
-        item.id === productId ? { ...item, quantity } : item
-      )
+      currentItems.map(item => (item.id === productId ? { ...item, quantity } : item))
     )
   }
 

@@ -22,13 +22,14 @@ export default function ProductsPage() {
               Premium Electronics & Accessories
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Discover our curated selection of cutting-edge tech products designed to enhance your digital lifestyle
+              Discover our curated selection of cutting-edge tech products designed to enhance your
+              digital lifestyle
             </p>
           </div>
 
           {/* Products Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {MOCK_CART_ITEMS.map((product) => (
+            {MOCK_CART_ITEMS.map(product => (
               <ProductListingCard key={product.id} product={product} />
             ))}
           </div>
@@ -69,4 +70,3 @@ export default function ProductsPage() {
     </div>
   )
 }
-

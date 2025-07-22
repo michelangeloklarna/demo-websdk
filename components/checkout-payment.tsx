@@ -19,18 +19,17 @@ import { OrderSummarySection } from "@/components/checkout-sections/order-summar
 import { Button } from "@/components/ui/button"
 import { ShoppingCart } from "lucide-react"
 
-
 // All Klarna components and form helpers have been moved to separate files
 
 export default function CheckoutPayment() {
   const router = useRouter()
-  
+
   // Extract state management to custom hooks
   const uxSettings = useUXSettings()
   const { currency, setCurrency, locale, setLocale } = useCurrencyLocale()
   const checkoutForm = useCheckoutForm(locale)
   const { items: cartItems, isEmpty: isCartEmpty, updateQuantity, removeItem } = useCartContext()
-  
+
   // Local state
   const [paymentMethod, setPaymentMethod] = useState<PaymentData["method"]>(PAYMENT_METHODS.CARD)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -53,77 +52,86 @@ export default function CheckoutPayment() {
   })
 
   // Handlers
-  const handleCurrencyChange = useCallback((newCurrency: string) => {
-    setCurrency(newCurrency)
-  }, [setCurrency])
+  const handleCurrencyChange = useCallback(
+    (newCurrency: string) => {
+      setCurrency(newCurrency)
+    },
+    [setCurrency]
+  )
 
-  const handleLocaleChange = useCallback((newLocale: string) => {
-    setLocale(newLocale)
+  const handleLocaleChange = useCallback(
+    (newLocale: string) => {
+      setLocale(newLocale)
 
-    const newCurrency = getCurrencyForLocale(newLocale)
-    setCurrency(newCurrency)
+      const newCurrency = getCurrencyForLocale(newLocale)
+      setCurrency(newCurrency)
 
-    const newCountry = getCountryCodeForLocale(newLocale)
-    checkoutForm.updateFormDataForLocale(newLocale, newCountry)
-  }, [setLocale, setCurrency, checkoutForm])
+      const newCountry = getCountryCodeForLocale(newLocale)
+      checkoutForm.updateFormDataForLocale(newLocale, newCountry)
+    },
+    [setLocale, setCurrency, checkoutForm]
+  )
 
   // Memoize the Klarna button configuration
-  const buttonConfig = useMemo(() => ({
-    shape: "default" as const,
-    theme: "default" as const,
-    locale: locale,
-    id: "klarna-payment-button",
-    initiationMode: "DEVICE_BEST" as const,
-    initiate: () => {
-      const { shipping, billing, useDifferentBilling } = checkoutForm.getAddresses()
+  const buttonConfig = useMemo(
+    () => ({
+      shape: "default" as const,
+      theme: "default" as const,
+      locale: locale,
+      id: "klarna-payment-button",
+      initiationMode: "DEVICE_BEST" as const,
+      initiate: () => {
+        const { shipping, billing, useDifferentBilling } = checkoutForm.getAddresses()
 
-      const payload = {
-        currency,
-        locale,
-        orderSummary,
-        cartItems,
-        shippingAddress: shipping,
-        billingAddress: billing,
-        useDifferentBilling,
-      }
+        const payload = {
+          currency,
+          locale,
+          orderSummary,
+          cartItems,
+          shippingAddress: shipping,
+          billingAddress: billing,
+          useDifferentBilling,
+        }
 
-      return fetch("/api/klarna-authorize", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      })
-        .then((response) => response.json())
-        .then((data) => {
-          if (data.error) {
-            throw new Error(data.error)
-          }
-
-          if (
-            data?.payment_transaction_response?.result === "STEP_UP_REQUIRED" &&
-            data?.payment_request?.payment_request_id
-          ) {
-            return Promise.resolve({
-              paymentRequestId: data.payment_request.payment_request_id,
-            })
-          }
-
-          if (data?.payment_transaction_response?.result === "APPROVED") {
-            router.push("/confirmation")
-            return Promise.resolve({})
-          }
-
-          if (data?.payment_transaction_response?.result === "DECLINED") {
-            router.push("/failure")
-            return Promise.resolve({})
-          }
-
-          throw new Error("Unexpected payment result")
+        return fetch("/api/klarna-authorize", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
         })
-        .catch((error) => {
-          throw error
-        })
-    },
-  }), [locale, currency, orderSummary, cartItems, checkoutForm, router])
+          .then(response => response.json())
+          .then(data => {
+            if (data.error) {
+              throw new Error(data.error)
+            }
+
+            if (
+              data?.payment_transaction_response?.result === "STEP_UP_REQUIRED" &&
+              data?.payment_request?.payment_request_id
+            ) {
+              return Promise.resolve({
+                paymentRequestId: data.payment_request.payment_request_id,
+              })
+            }
+
+            if (data?.payment_transaction_response?.result === "APPROVED") {
+              router.push("/confirmation")
+              return Promise.resolve({})
+            }
+
+            if (data?.payment_transaction_response?.result === "DECLINED") {
+              router.push("/failure")
+              return Promise.resolve({})
+            }
+
+            throw new Error("Unexpected payment result")
+          })
+          .catch(error => {
+            throw error
+          })
+      },
+    }),
+    [locale, currency, orderSummary, cartItems, checkoutForm, router]
+  )
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -146,9 +154,9 @@ export default function CheckoutPayment() {
   }
 
   const handleNonKlarnaSubmit = () => {
-    const form = document.querySelector('form')
+    const form = document.querySelector("form")
     if (form) {
-      const event = new Event('submit', { bubbles: true, cancelable: true })
+      const event = new Event("submit", { bubbles: true, cancelable: true })
       form.dispatchEvent(event)
     }
   }
@@ -166,9 +174,7 @@ export default function CheckoutPayment() {
             Add some products to your cart to proceed with checkout
           </p>
           <Button asChild size="lg">
-            <Link href="/products">
-              Continue Shopping
-            </Link>
+            <Link href="/products">Continue Shopping</Link>
           </Button>
         </div>
       </div>
@@ -222,11 +228,11 @@ export default function CheckoutPayment() {
         staggeredLoading={uxSettings.staggeredLoading}
         useStaticKlarna={uxSettings.useStaticKlarna}
         onPaymentOrderChange={uxSettings.movePayment}
-        onDefaultPaymentChange={(payment) => uxSettings.updateSetting('defaultPayment', payment)}
-        onShowOtherSubheaderChange={(show) => uxSettings.updateSetting('showOtherSubheader', show)}
-        onShowKlarnaSubheaderChange={(show) => uxSettings.updateSetting('showKlarnaSubheader', show)}
-        onStaggeredLoadingChange={(enabled) => uxSettings.updateSetting('staggeredLoading', enabled)}
-        onUseStaticKlarnaChange={(enabled) => uxSettings.updateSetting('useStaticKlarna', enabled)}
+        onDefaultPaymentChange={payment => uxSettings.updateSetting("defaultPayment", payment)}
+        onShowOtherSubheaderChange={show => uxSettings.updateSetting("showOtherSubheader", show)}
+        onShowKlarnaSubheaderChange={show => uxSettings.updateSetting("showKlarnaSubheader", show)}
+        onStaggeredLoadingChange={enabled => uxSettings.updateSetting("staggeredLoading", enabled)}
+        onUseStaticKlarnaChange={enabled => uxSettings.updateSetting("useStaticKlarna", enabled)}
       />
 
       <form onSubmit={handleSubmit} noValidate>

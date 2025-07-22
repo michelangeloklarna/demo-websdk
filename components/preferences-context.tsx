@@ -13,17 +13,17 @@ const AdminContext = createContext<AdminContextType | undefined>(undefined)
 
 // Internal development utilities
 const isDevelopmentMode = () => {
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return false
   }
-  
+
   // Only enable in development or when explicitly enabled
-  const isDevEnv = process.env.NODE_ENV === 'development'
-  const isExplicitlyEnabled = process.env.NEXT_PUBLIC_ENABLE_DEBUG_FEATURES === 'true'
-  
+  const isDevEnv = process.env.NODE_ENV === "development"
+  const isExplicitlyEnabled = process.env.NEXT_PUBLIC_ENABLE_DEBUG_FEATURES === "true"
+
   // Additional check: disable in Vercel production
-  const isVercelProduction = process.env.VERCEL_ENV === 'production'
-  
+  const isVercelProduction = process.env.VERCEL_ENV === "production"
+
   return (isDevEnv || isExplicitlyEnabled) && !isVercelProduction
 }
 
@@ -35,7 +35,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     if (!isDevelopmentMode()) {
       return
     }
-    
+
     setActionCount(prev => {
       const newCount = prev + 1
       // Activation sequence
@@ -53,23 +53,21 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   // In production, always return disabled state unless explicitly enabled
-  const contextValue = isDevelopmentMode() ? {
-    isAdvancedModeEnabled,
-    actionCount,
-    handleAdminAction,
-    resetActions,
-  } : {
-    isAdvancedModeEnabled: false,
-    actionCount: 0,
-    handleAdminAction: () => {},
-    resetActions: () => {},
-  }
+  const contextValue = isDevelopmentMode()
+    ? {
+        isAdvancedModeEnabled,
+        actionCount,
+        handleAdminAction,
+        resetActions,
+      }
+    : {
+        isAdvancedModeEnabled: false,
+        actionCount: 0,
+        handleAdminAction: () => {},
+        resetActions: () => {},
+      }
 
-  return (
-    <AdminContext.Provider value={contextValue}>
-      {children}
-    </AdminContext.Provider>
-  )
+  return <AdminContext.Provider value={contextValue}>{children}</AdminContext.Provider>
 }
 
 export function useAdmin() {
@@ -78,4 +76,4 @@ export function useAdmin() {
     throw new Error("useAdmin must be used within an AdminProvider")
   }
   return context
-} 
+}

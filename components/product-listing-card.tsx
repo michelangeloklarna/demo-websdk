@@ -24,16 +24,16 @@ export function ProductListingCard({ product }: ProductListingCardProps) {
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault() // Prevent navigation when clicking the button
     setIsAddingToCart(true)
-    
+
     // Add item to cart
     addItem(product.id, 1)
-    
+
     // Show success toast
     toast({
       title: "Added to cart",
       description: `${product.name} added to your cart`,
     })
-    
+
     // Simulate a brief loading state for better UX
     setTimeout(() => {
       setIsAddingToCart(false)
@@ -51,9 +51,7 @@ export function ProductListingCard({ product }: ProductListingCardProps) {
               fill
               className="object-cover group-hover:scale-105 transition-transform duration-200"
             />
-            <Badge className="absolute top-3 left-3 bg-primary text-primary-foreground">
-              New
-            </Badge>
+            <Badge className="absolute top-3 left-3 bg-primary text-primary-foreground">New</Badge>
           </div>
         </Link>
       </CardHeader>
@@ -68,9 +66,7 @@ export function ProductListingCard({ product }: ProductListingCardProps) {
             <Star
               key={i}
               className={`h-4 w-4 ${
-                i < 4 
-                  ? "fill-yellow-400 text-yellow-400" 
-                  : "text-muted-foreground"
+                i < 4 ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"
               }`}
             />
           ))}
@@ -84,9 +80,7 @@ export function ProductListingCard({ product }: ProductListingCardProps) {
             {formatCurrency(product.price * 1.2)}
           </span>
         </div>
-        <p className="text-sm text-muted-foreground mb-4">
-          {getProductDescription(product.id)}
-        </p>
+        <p className="text-sm text-muted-foreground mb-4">{getProductDescription(product.id)}</p>
       </CardContent>
       <CardFooter className="p-6 pt-0 flex gap-3">
         <Button className="flex-1" asChild>
@@ -95,8 +89,8 @@ export function ProductListingCard({ product }: ProductListingCardProps) {
             Buy Now
           </Link>
         </Button>
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           className="flex-1"
           onClick={handleAddToCart}
           disabled={isAddingToCart}

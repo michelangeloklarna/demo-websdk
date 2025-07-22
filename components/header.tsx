@@ -3,16 +3,14 @@
 import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { ShoppingCart, User, Menu, X, Smartphone } from "lucide-react"
+import { User, Menu, X, Smartphone } from "lucide-react"
 import { CurrencyLocaleDisplay } from "@/components/currency-locale-selector"
 import { useCurrencyLocale } from "@/components/currency-locale-context"
-import { useCartContext } from "@/components/cart-context"
+import { MiniCart } from "@/components/mini-cart"
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const { currency, locale } = useCurrencyLocale()
-  const { totalItems } = useCartContext()
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen)
 
@@ -72,16 +70,7 @@ export default function Header() {
               </Link>
             </Button>
 
-            <Button variant="ghost" size="sm" className="relative px-3 py-2" asChild>
-              <Link href="/checkout" aria-label={`Shopping cart with ${totalItems} items`}>
-                <ShoppingCart className="h-5 w-5" aria-hidden="true" />
-                {totalItems > 0 && (
-                  <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-primary text-primary-foreground">
-                    {totalItems}
-                  </Badge>
-                )}
-              </Link>
-            </Button>
+            <MiniCart />
 
             {/* Mobile menu button */}
             <Button

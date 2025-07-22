@@ -44,9 +44,12 @@ export function useUXSettings() {
       paymentOrder: storedOrder ? JSON.parse(storedOrder) : prev.paymentOrder,
       defaultPayment: storedDefault || prev.defaultPayment,
       showOtherSubheader: storedOther !== null ? storedOther === "true" : prev.showOtherSubheader,
-      showKlarnaSubheader: storedKlarna !== null ? storedKlarna === "true" : prev.showKlarnaSubheader,
-      staggeredLoading: storedStaggered !== null ? storedStaggered === "true" : prev.staggeredLoading,
-      useStaticKlarna: storedStaticKlarna !== null ? storedStaticKlarna === "true" : prev.useStaticKlarna,
+      showKlarnaSubheader:
+        storedKlarna !== null ? storedKlarna === "true" : prev.showKlarnaSubheader,
+      staggeredLoading:
+        storedStaggered !== null ? storedStaggered === "true" : prev.staggeredLoading,
+      useStaticKlarna:
+        storedStaticKlarna !== null ? storedStaticKlarna === "true" : prev.useStaticKlarna,
     }))
     setHydrated(true)
   }, [])
@@ -86,7 +89,7 @@ export function useUXSettings() {
     const newIdx = idx + dir
     if (newIdx < 0 || newIdx >= newOrder.length) return
     ;[newOrder[idx], newOrder[newIdx]] = [newOrder[newIdx], newOrder[idx]]
-    updateSetting('paymentOrder', newOrder)
+    updateSetting("paymentOrder", newOrder)
   }
 
   return {
@@ -95,4 +98,4 @@ export function useUXSettings() {
     updateSetting,
     movePayment,
   }
-} 
+}

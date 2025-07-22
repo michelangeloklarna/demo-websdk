@@ -19,16 +19,16 @@ export function ProductActions({ productId }: ProductActionsProps) {
 
   const handleAddToCart = async () => {
     setIsAddingToCart(true)
-    
+
     // Add item to cart
     addItem(productId, quantity)
-    
+
     // Show success toast
     toast({
       title: "Added to cart",
-      description: `${quantity} item${quantity > 1 ? 's' : ''} added to your cart`,
+      description: `${quantity} item${quantity > 1 ? "s" : ""} added to your cart`,
     })
-    
+
     // Simulate a brief loading state for better UX
     setTimeout(() => {
       setIsAddingToCart(false)
@@ -48,11 +48,7 @@ export function ProductActions({ productId }: ProductActionsProps) {
             <Minus className="h-4 w-4" />
           </Button>
           <span className="px-4 py-2 min-w-[3rem] text-center">{quantity}</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setQuantity(quantity + 1)}
-          >
+          <Button variant="ghost" size="sm" onClick={() => setQuantity(quantity + 1)}>
             <Plus className="h-4 w-4" />
           </Button>
         </div>
@@ -66,10 +62,10 @@ export function ProductActions({ productId }: ProductActionsProps) {
             Buy Now
           </Link>
         </Button>
-        <Button 
-          variant="outline" 
-          size="lg" 
-          className="flex-1" 
+        <Button
+          variant="outline"
+          size="lg"
+          className="flex-1"
           onClick={handleAddToCart}
           disabled={isAddingToCart}
         >

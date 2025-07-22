@@ -6,7 +6,17 @@ import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Minus, Plus } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
 import { PAYMENT_METHODS } from "@/lib/constants"
@@ -36,16 +46,16 @@ interface OrderSummaryProps {
   paymentMethod: PaymentData["method"]
   isSubmitting: boolean
   submitError: string | null
-  
+
   // Klarna-specific props
   klarnaPresentation: any
   klarnaLoading: boolean
   buttonConfig: any
-  
+
   // Cart management handlers
   onUpdateQuantity?: (productId: number, quantity: number) => void
   onRemoveItem?: (productId: number) => void
-  
+
   // Handlers
   onNonKlarnaSubmit: () => void
 }
@@ -182,7 +192,9 @@ export function OrderSummarySection({
                             aria-label={`Decrease quantity of ${item.name}`}
                             disabled={item.quantity <= 1}
                           >
-                            <Minus className={`h-3 w-3 transition-colors ${item.quantity <= 1 ? 'text-muted-foreground' : 'text-foreground'}`} />
+                            <Minus
+                              className={`h-3 w-3 transition-colors ${item.quantity <= 1 ? "text-muted-foreground" : "text-foreground"}`}
+                            />
                           </Button>
                           <span className="px-3 text-sm font-medium min-w-[2.5rem] text-center bg-muted/30 h-8 flex items-center justify-center border-r">
                             {item.quantity}
@@ -228,7 +240,8 @@ export function OrderSummarySection({
                         <AlertDialogHeader>
                           <AlertDialogTitle>Remove item from cart?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Are you sure you want to remove <strong>{item.name}</strong> from your cart? This action cannot be undone.
+                            Are you sure you want to remove <strong>{item.name}</strong> from your
+                            cart? This action cannot be undone.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>

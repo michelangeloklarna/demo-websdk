@@ -5,15 +5,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { ChevronUp, ChevronDown } from "lucide-react"
 import { CurrencyLocaleSelector } from "@/components/currency-locale-selector"
 
 const PAYMENT_METHOD_LABELS: Record<string, string> = {
-  "card": "Credit or Debit Card",
-  "klarna": "Klarna", 
-  "paypal": "PayPal",
-  "bank": "Bank Transfer",
+  card: "Credit or Debit Card",
+  klarna: "Klarna",
+  paypal: "PayPal",
+  bank: "Bank Transfer",
 }
 
 interface UXSettingsPanelProps {
@@ -22,7 +28,7 @@ interface UXSettingsPanelProps {
   locale: string
   onCurrencyChange: (currency: string) => void
   onLocaleChange: (locale: string) => void
-  
+
   // UX settings props
   hydrated: boolean
   paymentOrder: string[]
@@ -31,7 +37,7 @@ interface UXSettingsPanelProps {
   showKlarnaSubheader: boolean
   staggeredLoading: boolean
   useStaticKlarna: boolean
-  
+
   // UX settings handlers
   onPaymentOrderChange: (idx: number, dir: -1 | 1) => void
   onDefaultPaymentChange: (payment: string) => void
@@ -68,7 +74,7 @@ export function UXSettingsPanel({
           <TabsTrigger value="ux-settings">UX Settings</TabsTrigger>
           <TabsTrigger value="interop-data">Interoperability Data</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="region-currency">
           <CardHeader>
             <CardTitle>Region & Currency Settings</CardTitle>
@@ -82,7 +88,7 @@ export function UXSettingsPanel({
             />
           </CardContent>
         </TabsContent>
-        
+
         <TabsContent value="ux-settings">
           <CardHeader>
             <CardTitle>UX Settings</CardTitle>
@@ -127,7 +133,7 @@ export function UXSettingsPanel({
                     ))}
                   </ul>
                 </div>
-                
+
                 {/* Default Payment Method & Toggles */}
                 <div className="space-y-4">
                   <div>
@@ -137,7 +143,7 @@ export function UXSettingsPanel({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {paymentOrder.map((method) => (
+                        {paymentOrder.map(method => (
                           <SelectItem key={method} value={method} className="text-sm">
                             {PAYMENT_METHOD_LABELS[method]}
                           </SelectItem>
@@ -145,62 +151,62 @@ export function UXSettingsPanel({
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div className="flex flex-col gap-2 mt-2">
                     <div className="flex flex-row-reverse justify-between items-center">
-                      <Switch 
-                        id="other-subheader-toggle" 
-                        checked={showOtherSubheader} 
-                        onCheckedChange={onShowOtherSubheaderChange} 
+                      <Switch
+                        id="other-subheader-toggle"
+                        checked={showOtherSubheader}
+                        onCheckedChange={onShowOtherSubheaderChange}
                       />
-                      <label 
-                        htmlFor="other-subheader-toggle" 
-                        className="text-sm font-medium cursor-pointer select-none truncate" 
+                      <label
+                        htmlFor="other-subheader-toggle"
+                        className="text-sm font-medium cursor-pointer select-none truncate"
                         title="Display other payment methods sub-header"
                       >
                         Display other payment methods sub-header
                       </label>
                     </div>
-                    
+
                     <div className="flex flex-row-reverse justify-between items-center">
-                      <Switch 
-                        id="klarna-subheader-toggle" 
-                        checked={showKlarnaSubheader} 
-                        onCheckedChange={onShowKlarnaSubheaderChange} 
+                      <Switch
+                        id="klarna-subheader-toggle"
+                        checked={showKlarnaSubheader}
+                        onCheckedChange={onShowKlarnaSubheaderChange}
                       />
-                      <label 
-                        htmlFor="klarna-subheader-toggle" 
-                        className="text-sm font-medium cursor-pointer select-none truncate" 
+                      <label
+                        htmlFor="klarna-subheader-toggle"
+                        className="text-sm font-medium cursor-pointer select-none truncate"
                         title="Display Klarna sub-header"
                       >
                         Display Klarna sub-header
                       </label>
                     </div>
-                    
+
                     <div className="flex flex-row-reverse justify-between items-center">
-                      <Switch 
-                        id="staggered-loading-toggle" 
-                        checked={staggeredLoading} 
-                        onCheckedChange={onStaggeredLoadingChange} 
+                      <Switch
+                        id="staggered-loading-toggle"
+                        checked={staggeredLoading}
+                        onCheckedChange={onStaggeredLoadingChange}
                       />
-                      <label 
-                        htmlFor="staggered-loading-toggle" 
-                        className="text-sm font-medium cursor-pointer select-none truncate" 
+                      <label
+                        htmlFor="staggered-loading-toggle"
+                        className="text-sm font-medium cursor-pointer select-none truncate"
                         title="Enable staggered loading animation for payment methods"
                       >
                         Staggered payment methods load
                       </label>
                     </div>
-                    
+
                     <div className="flex flex-row-reverse justify-between items-center">
-                      <Switch 
-                        id="static-klarna-toggle" 
-                        checked={useStaticKlarna} 
-                        onCheckedChange={onUseStaticKlarnaChange} 
+                      <Switch
+                        id="static-klarna-toggle"
+                        checked={useStaticKlarna}
+                        onCheckedChange={onUseStaticKlarnaChange}
                       />
-                      <label 
-                        htmlFor="static-klarna-toggle" 
-                        className="text-sm font-medium cursor-pointer select-none truncate" 
+                      <label
+                        htmlFor="static-klarna-toggle"
+                        className="text-sm font-medium cursor-pointer select-none truncate"
                         title="Use static Klarna logo and text instead of SDK components"
                       >
                         Static Icon and Header
@@ -212,18 +218,19 @@ export function UXSettingsPanel({
             )}
           </CardContent>
         </TabsContent>
-        
+
         <TabsContent value="interop-data">
           <CardHeader>
             <CardTitle>Interoperability Data</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground text-sm">
-              This section will display interoperability data relevant to the checkout process. (Placeholder)
+              This section will display interoperability data relevant to the checkout process.
+              (Placeholder)
             </p>
           </CardContent>
         </TabsContent>
       </Tabs>
     </Card>
   )
-} 
+}

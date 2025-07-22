@@ -19,6 +19,7 @@ The checkout experience includes configurable UX settings that allow you to cust
 The **"Staggered payment methods load"** toggle allows you to compare two different loading experiences:
 
 #### When **Enabled** (Default - Enhanced UX):
+
 - Payment methods appear with a smooth, staggered animation (200ms initial delay + 100ms per method)
 - Klarna loading states feature:
   - **Skeleton Loading Cards** that mimic the structure of payment method options
@@ -28,6 +29,7 @@ The **"Staggered payment methods load"** toggle allows you to compare two differ
 - Enhanced visual feedback throughout the loading process
 
 #### When **Disabled** (Original Behavior):
+
 - Payment methods appear immediately without delays
 - Simple skeleton loading states (no fancy animations)
 - Standard loading behavior matching the original implementation
@@ -38,6 +40,7 @@ The **"Staggered payment methods load"** toggle allows you to compare two differ
 The **"Static Icon and Header"** toggle allows you to compare SDK-based vs static Klarna rendering:
 
 #### When **Enabled**:
+
 - Uses a static Klarna logo image from Klarna's CDN for the icon
 - Displays static text "Klarna" for the header
 - **Subheaders still use SDK components** for localized content
@@ -45,6 +48,7 @@ The **"Static Icon and Header"** toggle allows you to compare SDK-based vs stati
 - Mixed approach: static visuals + dynamic promotional content
 
 #### When **Disabled** (Default - Full SDK Integration):
+
 - Uses dynamic Klarna SDK components for icon, header, and subheaders
 - Displays localized content based on selected region/currency
 - Shows SDK-provided promotional text and styling
@@ -52,6 +56,7 @@ The **"Static Icon and Header"** toggle allows you to compare SDK-based vs stati
 - Fully integrated with Klarna's presentation layer
 
 ### Other UX Settings:
+
 - **Payment Method Order**: Drag and drop to reorder payment methods
 - **Default Payment Method**: Set which payment method is pre-selected
 - **Display Options**: Toggle sub-headers for payment methods
@@ -77,6 +82,7 @@ All settings are persisted in localStorage and will be remembered across session
 ### Installation
 
 1. **Clone the repository:**
+
    ```sh
    git clone <your-github-repo-url>
    cd demo-websdk
@@ -160,6 +166,7 @@ To launch this project on Vercel:
    - Once deployed, Vercel will provide a live URL for your app (e.g., `https://your-project-name.vercel.app`).
 
 **Note:**
+
 - For company/private dependencies, ensure they are available via the public npm registry or adjust your `.vercelignore` as needed.
 - Review the [Vercel documentation](https://vercel.com/docs) for advanced configuration.
 

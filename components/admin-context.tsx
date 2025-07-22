@@ -13,17 +13,17 @@ const SecretUXContext = createContext<SecretUXContextType | undefined>(undefined
 
 // Internal development utilities
 const isDevelopmentMode = () => {
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return false
   }
-  
+
   // Only enable in development or when explicitly enabled
-  const isDevEnv = process.env.NODE_ENV === 'development'
-  const isExplicitlyEnabled = process.env.NEXT_PUBLIC_ENABLE_DEBUG_FEATURES === 'true'
-  
+  const isDevEnv = process.env.NODE_ENV === "development"
+  const isExplicitlyEnabled = process.env.NEXT_PUBLIC_ENABLE_DEBUG_FEATURES === "true"
+
   // Additional check: disable in Vercel production
-  const isVercelProduction = process.env.VERCEL_ENV === 'production'
-  
+  const isVercelProduction = process.env.VERCEL_ENV === "production"
+
   return (isDevEnv || isExplicitlyEnabled) && !isVercelProduction
 }
 
@@ -35,7 +35,7 @@ export function SecretUXProvider({ children }: { children: React.ReactNode }) {
     if (!isDevelopmentMode()) {
       return
     }
-    
+
     setClickCount(prev => {
       const newCount = prev + 1
       // Obfuscated activation sequence
@@ -53,23 +53,21 @@ export function SecretUXProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   // In production, always return disabled state unless explicitly enabled
-  const contextValue = isDevelopmentMode() ? {
-    isUXSettingsVisible,
-    clickCount,
-    handleDebugAction,
-    resetClicks,
-  } : {
-    isUXSettingsVisible: false,
-    clickCount: 0,
-    handleDebugAction: () => {},
-    resetClicks: () => {},
-  }
+  const contextValue = isDevelopmentMode()
+    ? {
+        isUXSettingsVisible,
+        clickCount,
+        handleDebugAction,
+        resetClicks,
+      }
+    : {
+        isUXSettingsVisible: false,
+        clickCount: 0,
+        handleDebugAction: () => {},
+        resetClicks: () => {},
+      }
 
-  return (
-    <SecretUXContext.Provider value={contextValue}>
-      {children}
-    </SecretUXContext.Provider>
-  )
+  return <SecretUXContext.Provider value={contextValue}>{children}</SecretUXContext.Provider>
 }
 
 export function useSecretUX() {
@@ -78,4 +76,4 @@ export function useSecretUX() {
     throw new Error("useSecretUX must be used within a SecretUXProvider")
   }
   return context
-} 
+}

@@ -147,11 +147,12 @@ export function useCheckoutForm(initialLocale: string) {
     }
 
     // Simple logic: use different billing if checkbox is checked and billing fields are filled
-    const useDifferentBilling = differentBilling && 
-      billing.firstName && 
-      billing.address && 
-      billing.city && 
-      billing.zip && 
+    const useDifferentBilling =
+      differentBilling &&
+      billing.firstName &&
+      billing.address &&
+      billing.city &&
+      billing.zip &&
       billing.country
 
     return {
@@ -170,4 +171,4 @@ export function useCheckoutForm(initialLocale: string) {
     validateFormOnSubmit,
     getAddresses,
   }
-} 
+}

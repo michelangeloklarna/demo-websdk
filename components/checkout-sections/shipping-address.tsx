@@ -5,7 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { COUNTRIES } from "@/lib/country-data"
 import type { FormData } from "@/hooks/use-checkout-form"
 
@@ -36,7 +42,7 @@ export function ShippingAddress({
                 id="firstName"
                 name="firstName"
                 value={formData.firstName}
-                onChange={(e) => onFieldChange("firstName", e.target.value)}
+                onChange={e => onFieldChange("firstName", e.target.value)}
                 placeholder="John"
                 autoComplete="given-name"
                 required
@@ -48,27 +54,27 @@ export function ShippingAddress({
                 id="lastName"
                 name="lastName"
                 value={formData.lastName}
-                onChange={(e) => onFieldChange("lastName", e.target.value)}
+                onChange={e => onFieldChange("lastName", e.target.value)}
                 placeholder="Doe"
                 autoComplete="family-name"
                 required
               />
             </div>
           </div>
-          
+
           <div>
             <Label htmlFor="address">Address</Label>
             <Input
               id="address"
               name="address"
               value={formData.address}
-              onChange={(e) => onFieldChange("address", e.target.value)}
+              onChange={e => onFieldChange("address", e.target.value)}
               placeholder="123 Main Street"
               autoComplete="street-address"
               required
             />
           </div>
-          
+
           <div className="grid grid-cols-3 gap-4">
             <div>
               <Label htmlFor="city">City</Label>
@@ -76,7 +82,7 @@ export function ShippingAddress({
                 id="city"
                 name="city"
                 value={formData.city}
-                onChange={(e) => onFieldChange("city", e.target.value)}
+                onChange={e => onFieldChange("city", e.target.value)}
                 placeholder="New York"
                 autoComplete="address-level2"
                 required
@@ -88,7 +94,7 @@ export function ShippingAddress({
                 id="state"
                 name="state"
                 value={formData.state}
-                onChange={(e) => onFieldChange("state", e.target.value)}
+                onChange={e => onFieldChange("state", e.target.value)}
                 placeholder="NY"
                 autoComplete="address-level1"
                 required
@@ -100,17 +106,20 @@ export function ShippingAddress({
                 id="zip"
                 name="zip"
                 value={formData.zip}
-                onChange={(e) => onFieldChange("zip", e.target.value)}
+                onChange={e => onFieldChange("zip", e.target.value)}
                 placeholder="10001"
                 autoComplete="postal-code"
                 required
               />
             </div>
           </div>
-          
+
           <div>
             <Label htmlFor="country">Country</Label>
-            <Select value={formData.country} onValueChange={value => onFieldChange("country", value)}>
+            <Select
+              value={formData.country}
+              onValueChange={value => onFieldChange("country", value)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select country" />
               </SelectTrigger>
@@ -123,7 +132,7 @@ export function ShippingAddress({
               </SelectContent>
             </Select>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="phone">Phone</Label>
@@ -132,7 +141,7 @@ export function ShippingAddress({
                 name="phone"
                 type="tel"
                 value={formData.phone}
-                onChange={(e) => onFieldChange("phone", e.target.value)}
+                onChange={e => onFieldChange("phone", e.target.value)}
                 placeholder="+1 (555) 123-4567"
                 autoComplete="tel"
                 required
@@ -145,7 +154,7 @@ export function ShippingAddress({
                 name="email"
                 type="email"
                 value={formData.email}
-                onChange={(e) => onFieldChange("email", e.target.value)}
+                onChange={e => onFieldChange("email", e.target.value)}
                 placeholder="john@example.com"
                 autoComplete="email"
                 required
@@ -175,7 +184,7 @@ export function ShippingAddress({
                       id="billingFirstName"
                       name="billingFirstName"
                       value={formData.billingFirstName}
-                      onChange={(e) => onFieldChange("billingFirstName", e.target.value)}
+                      onChange={e => onFieldChange("billingFirstName", e.target.value)}
                       placeholder="John"
                       required
                     />
@@ -186,25 +195,25 @@ export function ShippingAddress({
                       id="billingLastName"
                       name="billingLastName"
                       value={formData.billingLastName}
-                      onChange={(e) => onFieldChange("billingLastName", e.target.value)}
+                      onChange={e => onFieldChange("billingLastName", e.target.value)}
                       placeholder="Doe"
                       required
                     />
                   </div>
                 </div>
-                
+
                 <div>
                   <Label htmlFor="billingAddress">Address</Label>
                   <Input
                     id="billingAddress"
                     name="billingAddress"
                     value={formData.billingAddress}
-                    onChange={(e) => onFieldChange("billingAddress", e.target.value)}
+                    onChange={e => onFieldChange("billingAddress", e.target.value)}
                     placeholder="456 Oak Avenue"
                     required
                   />
                 </div>
-                
+
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <Label htmlFor="billingCity">City</Label>
@@ -212,7 +221,7 @@ export function ShippingAddress({
                       id="billingCity"
                       name="billingCity"
                       value={formData.billingCity}
-                      onChange={(e) => onFieldChange("billingCity", e.target.value)}
+                      onChange={e => onFieldChange("billingCity", e.target.value)}
                       placeholder="Boston"
                       required
                     />
@@ -223,7 +232,7 @@ export function ShippingAddress({
                       id="billingState"
                       name="billingState"
                       value={formData.billingState}
-                      onChange={(e) => onFieldChange("billingState", e.target.value)}
+                      onChange={e => onFieldChange("billingState", e.target.value)}
                       placeholder="MA"
                       required
                     />
@@ -234,16 +243,19 @@ export function ShippingAddress({
                       id="billingZip"
                       name="billingZip"
                       value={formData.billingZip}
-                      onChange={(e) => onFieldChange("billingZip", e.target.value)}
+                      onChange={e => onFieldChange("billingZip", e.target.value)}
                       placeholder="02101"
                       required
                     />
                   </div>
                 </div>
-                
+
                 <div>
                   <Label htmlFor="billingCountry">Country</Label>
-                  <Select value={formData.billingCountry} onValueChange={value => onFieldChange("billingCountry", value)}>
+                  <Select
+                    value={formData.billingCountry}
+                    onValueChange={value => onFieldChange("billingCountry", value)}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select country" />
                     </SelectTrigger>
@@ -256,7 +268,7 @@ export function ShippingAddress({
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="billingPhone">Phone</Label>
@@ -265,7 +277,7 @@ export function ShippingAddress({
                       name="billingPhone"
                       type="tel"
                       value={formData.billingPhone}
-                      onChange={(e) => onFieldChange("billingPhone", e.target.value)}
+                      onChange={e => onFieldChange("billingPhone", e.target.value)}
                       placeholder="+1 (555) 123-4567"
                       required
                     />
@@ -277,7 +289,7 @@ export function ShippingAddress({
                       name="billingEmail"
                       type="email"
                       value={formData.billingEmail}
-                      onChange={(e) => onFieldChange("billingEmail", e.target.value)}
+                      onChange={e => onFieldChange("billingEmail", e.target.value)}
                       placeholder="john@example.com"
                       required
                     />
@@ -290,4 +302,4 @@ export function ShippingAddress({
       </CardContent>
     </Card>
   )
-} 
+}

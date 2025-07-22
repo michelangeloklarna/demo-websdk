@@ -23,11 +23,7 @@ interface CartProviderProps {
 export function CartProvider({ children }: CartProviderProps) {
   const cart = useCart()
 
-  return (
-    <CartContext.Provider value={cart}>
-      {children}
-    </CartContext.Provider>
-  )
+  return <CartContext.Provider value={cart}>{children}</CartContext.Provider>
 }
 
 export function useCartContext() {

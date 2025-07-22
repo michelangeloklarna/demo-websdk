@@ -120,7 +120,7 @@ body {
   color: inherit;
   line-height: inherit;
   font-weight: inherit;
-  
+
   /* Allow text and inline elements to flow naturally */
   display: inline;
   white-space: normal;

@@ -15,7 +15,7 @@ interface PaymentMethodSelectionProps {
   // Payment method state
   paymentMethod: PaymentData["method"]
   onPaymentMethodChange: (method: PaymentData["method"]) => void
-  
+
   // UX settings
   paymentOrder: string[]
   showOtherSubheader: boolean
@@ -24,11 +24,11 @@ interface PaymentMethodSelectionProps {
   useStaticKlarna: boolean
   paymentMethodsVisible: boolean
   hydrated: boolean
-  
+
   // Klarna state
   klarnaLoading: boolean
   klarnaPresentation: any
-  
+
   // Form state
   formData: FormData
   onFieldChange: (field: keyof FormData | string, value: string) => void
@@ -52,27 +52,29 @@ export function PaymentMethodSelection({
   // Debug: Log when presentation changes
   React.useEffect(() => {
     if (klarnaPresentation) {
-      console.log('[PaymentMethodSelection] Klarna presentation available:', {
+      console.log("[PaymentMethodSelection] Klarna presentation available:", {
         hasPresentation: !!klarnaPresentation,
         hasSubheader: !!klarnaPresentation?.subheader,
         hasEnriched: !!klarnaPresentation?.subheader?.enriched,
-        keys: Object.keys(klarnaPresentation || {})
+        keys: Object.keys(klarnaPresentation || {}),
       })
     }
   }, [klarnaPresentation])
   const renderPaymentMethod = (method: string, index: number) => {
-    const itemStyle = staggeredLoading ? {
-      transitionDelay: `${index * 100}ms`,
-      transform: paymentMethodsVisible ? 'translateY(0)' : 'translateY(10px)',
-      opacity: paymentMethodsVisible ? 1 : 0,
-    } : {}
+    const itemStyle = staggeredLoading
+      ? {
+          transitionDelay: `${index * 100}ms`,
+          transform: paymentMethodsVisible ? "translateY(0)" : "translateY(10px)",
+          opacity: paymentMethodsVisible ? 1 : 0,
+        }
+      : {}
 
     if (method === PAYMENT_METHODS.CARD) {
       return (
-        <div 
-          key={method} 
+        <div
+          key={method}
           className={`flex items-center space-x-3 p-4 border border-border rounded-lg hover:bg-muted/50 ${
-            staggeredLoading ? 'transition-all duration-300' : 'transition-colors'
+            staggeredLoading ? "transition-all duration-300" : "transition-colors"
           } min-h-[64px]`}
           style={staggeredLoading ? itemStyle : {}}
         >
@@ -85,7 +87,7 @@ export function PaymentMethodSelection({
                 width={36}
                 height={36}
                 className="object-contain"
-                style={{ width: 'auto', height: 'auto' }}
+                style={{ width: "auto", height: "auto" }}
               />
             </div>
             <div className="flex flex-col">
@@ -103,10 +105,10 @@ export function PaymentMethodSelection({
 
     if (method === PAYMENT_METHODS.KLARNA) {
       return (
-        <div 
-          key={method} 
+        <div
+          key={method}
           className={`border border-border rounded-lg hover:bg-muted/50 ${
-            staggeredLoading ? 'transition-all duration-300' : 'transition-colors'
+            staggeredLoading ? "transition-all duration-300" : "transition-colors"
           } min-h-[64px] relative flex flex-col`}
           style={staggeredLoading ? itemStyle : {}}
         >
@@ -135,10 +137,10 @@ export function PaymentMethodSelection({
 
     if (method === PAYMENT_METHODS.PAYPAL) {
       return (
-        <div 
-          key={method} 
+        <div
+          key={method}
           className={`flex items-center space-x-3 p-4 border border-border rounded-lg hover:bg-muted/50 ${
-            staggeredLoading ? 'transition-all duration-300' : 'transition-colors'
+            staggeredLoading ? "transition-all duration-300" : "transition-colors"
           } min-h-[64px]`}
           style={staggeredLoading ? itemStyle : {}}
         >
@@ -151,15 +153,13 @@ export function PaymentMethodSelection({
                 width={40}
                 height={36}
                 className="object-contain"
-                style={{ width: 'auto', height: 'auto' }}
+                style={{ width: "auto", height: "auto" }}
               />
             </div>
             <div className="flex flex-col">
               <span className="font-medium">PayPal</span>
               {showOtherSubheader && (
-                <span className="text-sm text-muted-foreground">
-                  Pay with your PayPal account
-                </span>
+                <span className="text-sm text-muted-foreground">Pay with your PayPal account</span>
               )}
             </div>
           </Label>
@@ -169,10 +169,10 @@ export function PaymentMethodSelection({
 
     if (method === PAYMENT_METHODS.BANK) {
       return (
-        <div 
-          key={method} 
+        <div
+          key={method}
           className={`flex items-center space-x-3 p-4 border border-border rounded-lg hover:bg-muted/50 ${
-            staggeredLoading ? 'transition-all duration-300' : 'transition-colors'
+            staggeredLoading ? "transition-all duration-300" : "transition-colors"
           } min-h-[64px]`}
           style={staggeredLoading ? itemStyle : {}}
         >
@@ -185,15 +185,13 @@ export function PaymentMethodSelection({
                 width={36}
                 height={36}
                 className="object-contain"
-                style={{ width: 'auto', height: 'auto' }}
+                style={{ width: "auto", height: "auto" }}
               />
             </div>
             <div className="flex flex-col">
               <span className="font-medium">Bank Transfer</span>
               {showOtherSubheader && (
-                <span className="text-sm text-muted-foreground">
-                  Direct bank account transfer
-                </span>
+                <span className="text-sm text-muted-foreground">Direct bank account transfer</span>
               )}
             </div>
           </Label>
@@ -215,7 +213,7 @@ export function PaymentMethodSelection({
               width={36}
               height={36}
               className="object-contain"
-              style={{ width: 'auto', height: 'auto' }}
+              style={{ width: "auto", height: "auto" }}
             />
           </div>
           Payment Method
@@ -245,7 +243,7 @@ export function PaymentMethodSelection({
                   required
                   aria-describedby="cardNumber-error"
                   value={formData.cardNumber}
-                  onChange={(e) => onFieldChange("cardNumber", e.target.value)}
+                  onChange={e => onFieldChange("cardNumber", e.target.value)}
                 />
               </div>
             </div>
@@ -260,7 +258,7 @@ export function PaymentMethodSelection({
                   required
                   aria-describedby="expiry-error"
                   value={formData.expiry}
-                  onChange={(e) => onFieldChange("expiry", e.target.value)}
+                  onChange={e => onFieldChange("expiry", e.target.value)}
                 />
               </div>
               <div>
@@ -273,7 +271,7 @@ export function PaymentMethodSelection({
                   required
                   aria-describedby="cvc-error"
                   value={formData.cvc}
-                  onChange={(e) => onFieldChange("cvc", e.target.value)}
+                  onChange={e => onFieldChange("cvc", e.target.value)}
                 />
               </div>
             </div>
@@ -287,7 +285,7 @@ export function PaymentMethodSelection({
                 required
                 aria-describedby="cardName-error"
                 value={formData.cardName}
-                onChange={(e) => onFieldChange("cardName", e.target.value)}
+                onChange={e => onFieldChange("cardName", e.target.value)}
               />
             </div>
           </fieldset>
@@ -295,4 +293,4 @@ export function PaymentMethodSelection({
       </CardContent>
     </Card>
   )
-} 
+}
